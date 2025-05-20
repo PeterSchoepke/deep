@@ -1,7 +1,20 @@
-#include "core/deep_window.h"
+#include "core/game.h"
 
 int main(int argc, char* argv[]) 
-{
-	deep::Window window("Game");
-	return 0;
+{	
+	try
+	{
+		deep::Game dungeonCrawler("Crawler");
+		return dungeonCrawler.run();
+	}
+	catch (const std::exception& e)
+	{
+		std::cin.get();
+		return EXIT_FAILURE;
+	}
+	catch (...)
+	{
+		std::cin.get();
+		return EXIT_FAILURE;
+	}
 }

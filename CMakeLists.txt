@@ -15,9 +15,11 @@ FetchContent_MakeAvailable(SDL2)
  
 
 add_executable(${PROJECT_NAME} 
-    "main.cpp"
-    "core/deep_window.h"
-    "core/deep_window.cpp"
+    "main.cpp"    
+    "core/game.h"
+    "core/game.cpp"
+    "core/window.h"
+    "core/window.cpp"
 )
 target_link_libraries(${PROJECT_NAME} SDL2::SDL2-static SDL2::SDL2main)
 set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR})
