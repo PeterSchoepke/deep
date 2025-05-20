@@ -12,10 +12,14 @@ FetchContent_Declare(
     GIT_TAG "origin/SDL2"
 )
 FetchContent_MakeAvailable(SDL2)
- 
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(${PROJECT_NAME} 
+	"third_party/glad/glad.c" 
+	
     "src/main.cpp"    
+	
     "src/core/game.h"
     "src/core/game.cpp"
     "src/core/window.h"

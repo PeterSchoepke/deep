@@ -15,20 +15,36 @@ namespace deep
 	int Game::run()
 	{
 		if (m_window.init(m_title))
-		{
-			SDL_Event event;
+		{			
 			while (m_isGameRunning)
 			{
-				while (SDL_PollEvent(&event))
-				{
-					if (event.type == SDL_QUIT)
-					{
-						m_isGameRunning = false;
-					}
-				}
+				input();
+				preDraw();
+				draw();
+				m_window.swapWindow();
 			}
 		}
 
 		return 0;
+	}
+
+	void Game::input()
+	{
+		SDL_Event event;
+		while (SDL_PollEvent(&event))
+		{
+			if (event.type == SDL_QUIT)
+			{
+				m_isGameRunning = false;
+			}
+		}
+	}
+
+	void Game::preDraw()
+	{
+	}
+
+	void Game::draw()
+	{
 	}
 }
