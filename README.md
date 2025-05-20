@@ -2,7 +2,7 @@
 A First Person Action Dungeon Crawler
 
 ## Setup (Visual Studio)
-- Instal Visual Studio https://visualstudio.microsoft.com/de/vs/community/
+- Install Visual Studio https://visualstudio.microsoft.com/de/vs/community/
 - Install CMake https://cmake.org/download/
 - git clone https://github.com/PeterSchoepke/deep.git
 - cmake -S. -B.
