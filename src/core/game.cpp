@@ -21,7 +21,6 @@ namespace deep
 				input();
 				preDraw();
 				draw();
-				m_window.swapWindow();
 			}
 		}
 
