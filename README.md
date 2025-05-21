@@ -1,12 +1,17 @@
 # deep
 A First Person Action Dungeon Crawler
 
-## Setup (Visual Studio)
-- Install Visual Studio https://visualstudio.microsoft.com/de/vs/community/
-- Install CMake https://cmake.org/download/
+## Setup (Windows)
+### Programs
+- Visual Studio https://visualstudio.microsoft.com/de/vs/community/
+- CMake https://cmake.org/download/
+- VSCode https://code.visualstudio.com/download
+ - Extension: C/C++
+ - Extension: CMake Tools
+ - Shader languaes support for VS Code
+- Vulkan SDK (Only for Shader Compilation) https://vulkan.lunarg.com/sdk/home#windows
+### Project
 - git clone https://github.com/PeterSchoepke/deep.git
-- cmake -S. -B.
-- Open game.sln
-- Right click on "ALL_BUILD" in Solution Explorer and click "Build"
-- Right click on "game" in Solution Explorer and click "Set as Startup Project"
-- Press F5 or click "Local Windows Debugger"
+- mkdir build
+- cmake -S . -B build
+- MSBuild build\src\deep.vcxproj

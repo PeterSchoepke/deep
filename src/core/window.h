@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
-#include <glad/glad.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 namespace deep 
 {
@@ -12,10 +11,8 @@ namespace deep
 		~Window();
 
 		bool init(const char* title);
-		void swapWindow();
 
 	private:
 		SDL_Window* m_window = nullptr;
-		SDL_GLContext m_openGLContext = nullptr;
 	}; 
 }

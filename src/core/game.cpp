@@ -33,7 +33,7 @@ namespace deep
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
-			if (event.type == SDL_QUIT)
+			if (event.type == SDL_EVENT_QUIT)
 			{
 				m_isGameRunning = false;
 			}
