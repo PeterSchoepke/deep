@@ -4,15 +4,17 @@
 
 namespace deep 
 {
-	class Window 
+	class Renderer 
 	{
 	public:
-		Window();
-		~Window();
+		Renderer();
+		~Renderer();
 
 		bool init(const char* title);
+		void render();
 
 	private:
 		SDL_Window* m_window = nullptr;
+		SDL_GPUDevice* m_device= nullptr;
 	}; 
 }

@@ -5,7 +5,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     main.cpp
     core/game.cpp
     core/game.h
-    core/window.cpp
-    core/window.h
+    core/renderer.cpp
+    core/renderer.h
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE vendor)

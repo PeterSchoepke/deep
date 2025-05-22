@@ -13,8 +13,8 @@ namespace deep
 	}
 
 	int Game::run()
-	{
-		if (m_window.init(m_title))
+	{	
+		if (m_renderer.init(m_title))
 		{			
 			while (m_isGameRunning)
 			{
@@ -45,5 +45,6 @@ namespace deep
 
 	void Game::draw()
 	{
+		m_renderer.render();
 	}
 }

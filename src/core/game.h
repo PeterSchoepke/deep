@@ -1,5 +1,5 @@
 #pragma once
-#include "window.h"
+#include "renderer.h"
 
 namespace deep
 {
@@ -13,7 +13,7 @@ namespace deep
 
 	private:
 		const char* m_title = nullptr;
-		Window m_window;
+		Renderer m_renderer;
 		bool m_isGameRunning{ true };
 
 		void input();
