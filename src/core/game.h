@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include "renderer.h"
 
 namespace deep
@@ -7,17 +8,13 @@ namespace deep
 	{
 	public:
 		Game(const char* title);
-		~Game();
-
-		int run();
+		void run();
 
 	private:
-		const char* m_title = nullptr;
 		Renderer m_renderer;
-		bool m_isGameRunning{ true };
+		bool m_isGameRunning{ false };
 
-		void input();
-		void preDraw();
+		void update();
 		void draw();
 	};
 }

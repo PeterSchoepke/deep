@@ -3,31 +3,22 @@
 namespace deep
 {
 	Game::Game(const char* title)
-	{
-		m_title = title;
-	}
-
-	Game::~Game()
-	{
-		
-	}
-
-	int Game::run()
 	{	
-		if (m_renderer.init(m_title))
-		{			
-			while (m_isGameRunning)
-			{
-				input();
-				preDraw();
-				draw();
-			}
-		}
-
-		return 0;
+		m_isGameRunning = m_renderer.init(title);
+		m_renderer.addMesh();
 	}
 
-	void Game::input()
+	void Game::run()
+	{	
+		while (m_isGameRunning)
+		{
+			update();
+			draw();
+		}
+		m_renderer.quit();
+	}
+
+	void Game::update()
 	{
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
@@ -37,10 +28,6 @@ namespace deep
 				m_isGameRunning = false;
 			}
 		}
-	}
-
-	void Game::preDraw()
-	{
 	}
 
 	void Game::draw()

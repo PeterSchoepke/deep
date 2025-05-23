@@ -5,6 +5,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     main.cpp
     core/game.cpp
     core/game.h
+    core/mesh.cpp
+    core/mesh.h
     core/renderer.cpp
     core/renderer.h
 )
