@@ -90,7 +90,7 @@ void DEEP_Create_Render_Pipeline(RenderContext& renderContext)
     // a_color
     vertexAttributes[1].buffer_slot = 0;
     vertexAttributes[1].location = 1;
-    vertexAttributes[1].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
+    vertexAttributes[1].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2;
     vertexAttributes[1].offset = sizeof(float) * 3;
 
     pipelineInfo.vertex_input_state.num_vertex_attributes = 2;
@@ -128,10 +128,10 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
 {
     Vertex vertices[]
     {
-        {-0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f},   // top right
-        { 0.5f,  0.5f, 0.0f,   0.0f, 1.0f, 0.0f},   // bottom right
-        { 0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f},  // bottom left
-        {-0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 0.0f}    // top left 
+        {-0.5f,  0.5f, 0.0f,   0.0f, 1.0f}, // top left
+        { 0.5f,  0.5f, 0.0f,   1.0f, 1.0f}, // top right
+        { 0.5f, -0.5f, 0.0f,   1.0f, 0.0f}, // bottom right
+        {-0.5f, -0.5f, 0.0f,   0.0f, 0.0f}  // bottom left
     };
     Uint16 indices[] = {  
         0, 1, 2, // first triangle
