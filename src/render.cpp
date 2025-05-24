@@ -154,15 +154,15 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
     SDL_GPUTransferBufferCreateInfo transferInfo{};
     transferInfo.size = sizeof(vertices) + sizeof(indices);
     transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    renderData.transferBuffer = SDL_CreateGPUTransferBuffer(renderContext.device, &transferInfo);
+    SDL_GPUTransferBuffer* bufferTransferBuffer = SDL_CreateGPUTransferBuffer(renderContext.device, &transferInfo);
 
     // fill the transfer buffer
-    Vertex* transferData = (Vertex*)SDL_MapGPUTransferBuffer(renderContext.device, renderData.transferBuffer, false);
+    Vertex* transferData = (Vertex*)SDL_MapGPUTransferBuffer(renderContext.device, bufferTransferBuffer, false);
     SDL_memcpy(transferData, (void*)vertices, sizeof(vertices));
     Uint16* indexData = (Uint16*) &transferData[4];
     SDL_memcpy(indexData, (void*)indices, sizeof(indices));
 
-    SDL_UnmapGPUTransferBuffer(renderContext.device, renderData.transferBuffer);
+    SDL_UnmapGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
 
     // start a copy pass
     SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
@@ -170,7 +170,7 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
 
     // upload the vertex buffer
     SDL_GPUTransferBufferLocation vertexBufferlocation{};
-    vertexBufferlocation.transfer_buffer = renderData.transferBuffer;
+    vertexBufferlocation.transfer_buffer = bufferTransferBuffer;
     vertexBufferlocation.offset = 0;
     SDL_GPUBufferRegion vertexRegion{};
     vertexRegion.buffer = renderData.vertexBuffer;
@@ -180,7 +180,7 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
 
     // upload the vertex buffer
     SDL_GPUTransferBufferLocation indexBufferlocation{};
-    indexBufferlocation.transfer_buffer = renderData.transferBuffer;
+    indexBufferlocation.transfer_buffer = bufferTransferBuffer;
     indexBufferlocation.offset = sizeof(vertices);
     SDL_GPUBufferRegion indexRegion{};
     indexRegion.buffer = renderData.indexBuffer;
@@ -191,12 +191,12 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
     // end the copy pass
     SDL_EndGPUCopyPass(copyPass);
     SDL_SubmitGPUCommandBuffer(commandBuffer);
+    SDL_ReleaseGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
 }
 void DEEP_Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData){
     // release buffers
     SDL_ReleaseGPUBuffer(renderContext.device, renderData.vertexBuffer);
     SDL_ReleaseGPUBuffer(renderContext.device, renderData.indexBuffer);
-    SDL_ReleaseGPUTransferBuffer(renderContext.device, renderData.transferBuffer);
 }
 
 void DEEP_Render(RenderContext& renderContext, RenderData& renderData)

@@ -13,7 +13,6 @@ typedef struct RenderData
 {
 	SDL_GPUBuffer* vertexBuffer;
     SDL_GPUBuffer* indexBuffer;
-    SDL_GPUTransferBuffer* transferBuffer;
 } RenderData;
 
 struct Vertex
