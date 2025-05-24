@@ -90,7 +90,7 @@ void DEEP_Create_Render_Pipeline(RenderContext& renderContext)
     // a_color
     vertexAttributes[1].buffer_slot = 0;
     vertexAttributes[1].location = 1;
-    vertexAttributes[1].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4;
+    vertexAttributes[1].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
     vertexAttributes[1].offset = sizeof(float) * 3;
 
     pipelineInfo.vertex_input_state.num_vertex_attributes = 2;
@@ -128,31 +128,39 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
 {
     Vertex vertices[]
     {
-        {0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f},     // top vertex
-        {-0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f},   // bottom left vertex
-        {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f}     // bottom right vertex
+        {-0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f},   // top right
+        { 0.5f,  0.5f, 0.0f,   0.0f, 1.0f, 0.0f},   // bottom right
+        { 0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f},  // bottom left
+        {-0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 0.0f}    // top left 
+    };
+    Uint16 indices[] = {  
+        0, 1, 2, // first triangle
+        0, 2, 3  // second triangle
     };
 
     // create the vertex buffer
-    SDL_GPUBufferCreateInfo bufferInfo{};
-    bufferInfo.size = sizeof(vertices);
-    bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-    renderData.vertexBuffer = SDL_CreateGPUBuffer(renderContext.device, &bufferInfo);
+    SDL_GPUBufferCreateInfo vertexBufferInfo{};
+    vertexBufferInfo.size = sizeof(vertices);
+    vertexBufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
+    renderData.vertexBuffer = SDL_CreateGPUBuffer(renderContext.device, &vertexBufferInfo);
+
+    // create the index buffer
+    SDL_GPUBufferCreateInfo indexBufferInfo{};
+    indexBufferInfo.size = sizeof(indices);
+    indexBufferInfo.usage = SDL_GPU_BUFFERUSAGE_INDEX;
+    renderData.indexBuffer = SDL_CreateGPUBuffer(renderContext.device, &indexBufferInfo);
 
     // create a transfer buffer to upload to the vertex buffer
     SDL_GPUTransferBufferCreateInfo transferInfo{};
-    transferInfo.size = sizeof(vertices);
+    transferInfo.size = sizeof(vertices) + sizeof(indices);
     transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
     renderData.transferBuffer = SDL_CreateGPUTransferBuffer(renderContext.device, &transferInfo);
 
     // fill the transfer buffer
-    Vertex* data = (Vertex*)SDL_MapGPUTransferBuffer(renderContext.device, renderData.transferBuffer, false);
-    
-    SDL_memcpy(data, (void*)vertices, sizeof(vertices));
-
-    // data[0] = vertices[0];
-    // data[1] = vertices[1];
-    // data[2] = vertices[2];
+    Vertex* transferData = (Vertex*)SDL_MapGPUTransferBuffer(renderContext.device, renderData.transferBuffer, false);
+    SDL_memcpy(transferData, (void*)vertices, sizeof(vertices));
+    Uint16* indexData = (Uint16*) &transferData[4];
+    SDL_memcpy(indexData, (void*)indices, sizeof(indices));
 
     SDL_UnmapGPUTransferBuffer(renderContext.device, renderData.transferBuffer);
 
@@ -160,19 +168,25 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
     SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
     SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
 
-    // where is the data
-    SDL_GPUTransferBufferLocation location{};
-    location.transfer_buffer = renderData.transferBuffer;
-    location.offset = 0;
-    
-    // where to upload the data
-    SDL_GPUBufferRegion region{};
-    region.buffer = renderData.vertexBuffer;
-    region.size = sizeof(vertices);
-    region.offset = 0;
+    // upload the vertex buffer
+    SDL_GPUTransferBufferLocation vertexBufferlocation{};
+    vertexBufferlocation.transfer_buffer = renderData.transferBuffer;
+    vertexBufferlocation.offset = 0;
+    SDL_GPUBufferRegion vertexRegion{};
+    vertexRegion.buffer = renderData.vertexBuffer;
+    vertexRegion.size = sizeof(vertices);
+    vertexRegion.offset = 0;
+    SDL_UploadToGPUBuffer(copyPass, &vertexBufferlocation, &vertexRegion, false);
 
-    // upload the data
-    SDL_UploadToGPUBuffer(copyPass, &location, &region, true);
+    // upload the vertex buffer
+    SDL_GPUTransferBufferLocation indexBufferlocation{};
+    indexBufferlocation.transfer_buffer = renderData.transferBuffer;
+    indexBufferlocation.offset = sizeof(vertices);
+    SDL_GPUBufferRegion indexRegion{};
+    indexRegion.buffer = renderData.indexBuffer;
+    indexRegion.size = sizeof(vertices);
+    indexRegion.offset = 0;
+    SDL_UploadToGPUBuffer(copyPass, &indexBufferlocation, &indexRegion, false);
 
     // end the copy pass
     SDL_EndGPUCopyPass(copyPass);
@@ -181,6 +195,7 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
 void DEEP_Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData){
     // release buffers
     SDL_ReleaseGPUBuffer(renderContext.device, renderData.vertexBuffer);
+    SDL_ReleaseGPUBuffer(renderContext.device, renderData.indexBuffer);
     SDL_ReleaseGPUTransferBuffer(renderContext.device, renderData.transferBuffer);
 }
 
@@ -216,14 +231,18 @@ void DEEP_Render(RenderContext& renderContext, RenderData& renderData)
 		SDL_BindGPUGraphicsPipeline(renderPass, renderContext.graphicsPipeline);
 
 		// bind the vertex buffer
-		SDL_GPUBufferBinding bufferBindings[1];
-		bufferBindings[0].buffer = renderData.vertexBuffer;
-		bufferBindings[0].offset = 0;
+		SDL_GPUBufferBinding vertexBufferBinding{};
+		vertexBufferBinding.buffer = renderData.vertexBuffer;
+		vertexBufferBinding.offset = 0;
+		SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
 
-		SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1);
+        SDL_GPUBufferBinding indexBufferBinding{};
+		indexBufferBinding.buffer = renderData.indexBuffer;
+		indexBufferBinding.offset = 0;
+        SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
 
 		// issue a draw call
-		SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
+		SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
 
 		// end the render pass
 		SDL_EndGPURenderPass(renderPass);
