@@ -17,3 +17,6 @@ A First Person Action Dungeon Crawler
 - cmake -S . -B build
 - MSBuild build\src\deep.vcxproj
 - Press F5 in VSCode
+### Compile Shaders (Vulkan)
+- glslc -fshader-stage=vertex shaders/vertex.glsl -o shaders/vertex.spv
+- glslc -fshader-stage=fragment shaders/fragment.glsl -o shaders/fragment.spv
