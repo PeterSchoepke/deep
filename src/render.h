@@ -1,12 +1,16 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include "assets.h"
 
 typedef struct RenderContext
 {
 	SDL_Window* window;
 	SDL_GPUDevice* device;
     SDL_GPUGraphicsPipeline* graphicsPipeline;
+
+    SDL_GPUTexture* texture;
+    SDL_GPUSampler* sampler;
 } RenderContext;
 
 typedef struct RenderData

@@ -52,7 +52,7 @@ void DEEP_Create_Render_Pipeline(RenderContext& renderContext)
     fragmentInfo.entrypoint = "main";
     fragmentInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
     fragmentInfo.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-    fragmentInfo.num_samplers = 0;
+    fragmentInfo.num_samplers = 1;
     fragmentInfo.num_storage_buffers = 0;
     fragmentInfo.num_storage_textures = 0;
     fragmentInfo.num_uniform_buffers = 0;
@@ -122,10 +122,55 @@ void DEEP_Destroy_Render_Pipeline(RenderContext& renderContext)
 {
     // release the pipeline
     SDL_ReleaseGPUGraphicsPipeline(renderContext.device, renderContext.graphicsPipeline);
+    // release the texture and sampler
+    SDL_ReleaseGPUTexture(renderContext.device, renderContext.texture);
+    SDL_ReleaseGPUSampler(renderContext.device, renderContext.sampler);
 }
 
 void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderData)
 {
+    SDL_Surface *imageData = DEEP_Load_Image("diffuse.bmp", 4);
+		if (imageData == NULL)
+		{
+			SDL_Log("Could not load image data!");
+			// FIXME handle image not found
+		}
+
+    SDL_GPUSamplerCreateInfo samplerCreateInfo{};
+    samplerCreateInfo.min_filter = SDL_GPU_FILTER_NEAREST;
+	samplerCreateInfo.mag_filter = SDL_GPU_FILTER_NEAREST;
+	samplerCreateInfo.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
+	samplerCreateInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    renderContext.sampler = SDL_CreateGPUSampler(renderContext.device, &samplerCreateInfo);
+
+    SDL_GPUTextureCreateInfo textureCreateInfo{};
+    textureCreateInfo.type = SDL_GPU_TEXTURETYPE_2D;
+	textureCreateInfo.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+	textureCreateInfo.width = imageData->w;
+	textureCreateInfo.height = imageData->h;
+	textureCreateInfo.layer_count_or_depth = 1;
+	textureCreateInfo.num_levels = 1;
+	textureCreateInfo.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+    renderContext.texture = SDL_CreateGPUTexture(renderContext.device, &textureCreateInfo);
+
+    SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo{};
+    transferBufferCreateInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+	transferBufferCreateInfo.size = imageData->w * imageData->h * 4;
+    SDL_GPUTransferBuffer* textureTransferBuffer = SDL_CreateGPUTransferBuffer(
+		renderContext.device,
+		&transferBufferCreateInfo
+	);
+
+	auto textureTransferPtr = SDL_MapGPUTransferBuffer(
+		renderContext.device,
+		textureTransferBuffer,
+		false
+	);
+	SDL_memcpy(textureTransferPtr, imageData->pixels, imageData->w * imageData->h * 4);
+	SDL_UnmapGPUTransferBuffer(renderContext.device, textureTransferBuffer);
+
     Vertex vertices[]
     {
         {-0.5f,  0.5f, 0.0f,   0.0f, 1.0f}, // top left
@@ -188,10 +233,28 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
     indexRegion.offset = 0;
     SDL_UploadToGPUBuffer(copyPass, &indexBufferlocation, &indexRegion, false);
 
+    // upload the texture
+    SDL_GPUTextureTransferInfo textureTransferInfo{};
+    textureTransferInfo.transfer_buffer = textureTransferBuffer;
+	textureTransferInfo.offset = 0; /* Zeros out the rest */
+    SDL_GPUTextureRegion textureRegion{};
+    textureRegion.texture = renderContext.texture;
+	textureRegion.w = imageData->w;
+	textureRegion.h = imageData->h;
+	textureRegion.d = 1;
+    SDL_UploadToGPUTexture(
+		copyPass,
+		&textureTransferInfo,
+		&textureRegion,
+		false
+	);
+
     // end the copy pass
     SDL_EndGPUCopyPass(copyPass);
     SDL_SubmitGPUCommandBuffer(commandBuffer);
+    SDL_DestroySurface(imageData);
     SDL_ReleaseGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
+    SDL_ReleaseGPUTransferBuffer(renderContext.device, textureTransferBuffer);
 }
 void DEEP_Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData){
     // release buffers
@@ -240,6 +303,11 @@ void DEEP_Render(RenderContext& renderContext, RenderData& renderData)
 		indexBufferBinding.buffer = renderData.indexBuffer;
 		indexBufferBinding.offset = 0;
         SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+
+        SDL_GPUTextureSamplerBinding textureSamplerBinding{};
+        textureSamplerBinding.texture = renderContext.texture;
+        textureSamplerBinding.sampler = renderContext.sampler;
+        SDL_BindGPUFragmentSamplers(renderPass, 0, &textureSamplerBinding, 1);
 
 		// issue a draw call
 		SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
