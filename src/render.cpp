@@ -223,13 +223,13 @@ void DEEP_Create_Render_Data(RenderContext& renderContext, RenderData& renderDat
     vertexRegion.offset = 0;
     SDL_UploadToGPUBuffer(copyPass, &vertexBufferlocation, &vertexRegion, false);
 
-    // upload the vertex buffer
+    // upload the index buffer
     SDL_GPUTransferBufferLocation indexBufferlocation{};
     indexBufferlocation.transfer_buffer = bufferTransferBuffer;
     indexBufferlocation.offset = sizeof(vertices);
     SDL_GPUBufferRegion indexRegion{};
     indexRegion.buffer = renderData.indexBuffer;
-    indexRegion.size = sizeof(vertices);
+    indexRegion.size = sizeof(indices);
     indexRegion.offset = 0;
     SDL_UploadToGPUBuffer(copyPass, &indexBufferlocation, &indexRegion, false);
 
