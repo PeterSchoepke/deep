@@ -205,15 +205,68 @@ namespace deep
     {
         Vertex vertices[]
         {
-            {-0.5f,  0.5f, 0.0f,   0.0f, 1.0f}, // top left
-            { 0.5f,  0.5f, 0.0f,   1.0f, 1.0f}, // top right
-            { 0.5f, -0.5f, 0.0f,   1.0f, 0.0f}, // bottom right
-            {-0.5f, -0.5f, 0.0f,   0.0f, 0.0f}  // bottom left
+            // Front face (Z = 0.5)
+            {-0.5f, -0.5f,  0.5f, 0.0f, 0.0f}, // 0
+            { 0.5f, -0.5f,  0.5f, 1.0f, 0.0f}, // 1
+            { 0.5f,  0.5f,  0.5f, 1.0f, 1.0f}, // 2
+            {-0.5f,  0.5f,  0.5f, 0.0f, 1.0f}, // 3
+
+            // Back face (Z = -0.5)
+            {-0.5f, -0.5f, -0.5f, 1.0f, 0.0f}, // 4 (Note: UVs are often mirrored or rotated for back faces)
+            { 0.5f, -0.5f, -0.5f, 0.0f, 0.0f}, // 5
+            { 0.5f,  0.5f, -0.5f, 0.0f, 1.0f}, // 6
+            {-0.5f,  0.5f, -0.5f, 1.0f, 1.0f}, // 7
+
+            // Top face (Y = 0.5)
+            {-0.5f,  0.5f,  0.5f, 0.0f, 1.0f}, // 8 (same pos as 3)
+            { 0.5f,  0.5f,  0.5f, 1.0f, 1.0f}, // 9 (same pos as 2)
+            { 0.5f,  0.5f, -0.5f, 1.0f, 0.0f}, // 10 (same pos as 6)
+            {-0.5f,  0.5f, -0.5f, 0.0f, 0.0f}, // 11 (same pos as 7)
+
+            // Bottom face (Y = -0.5)
+            {-0.5f, -0.5f,  0.5f, 0.0f, 0.0f}, // 12 (same pos as 0)
+            { 0.5f, -0.5f,  0.5f, 1.0f, 0.0f}, // 13 (same pos as 1)
+            { 0.5f, -0.5f, -0.5f, 1.0f, 1.0f}, // 14 (same pos as 5)
+            {-0.5f, -0.5f, -0.5f, 0.0f, 1.0f}, // 15 (same pos as 4)
+
+            // Right face (X = 0.5)
+            { 0.5f, -0.5f,  0.5f, 0.0f, 0.0f}, // 16 (same pos as 1)
+            { 0.5f, -0.5f, -0.5f, 1.0f, 0.0f}, // 17 (same pos as 5)
+            { 0.5f,  0.5f, -0.5f, 1.0f, 1.0f}, // 18 (same pos as 6)
+            { 0.5f,  0.5f,  0.5f, 0.0f, 1.0f}, // 19 (same pos as 2)
+
+            // Left face (X = -0.5)
+            {-0.5f, -0.5f,  0.5f, 1.0f, 0.0f}, // 20 (same pos as 0)
+            {-0.5f, -0.5f, -0.5f, 0.0f, 0.0f}, // 21 (same pos as 4)
+            {-0.5f,  0.5f, -0.5f, 0.0f, 1.0f}, // 22 (same pos as 7)
+            {-0.5f,  0.5f,  0.5f, 1.0f, 1.0f}  // 23 (same pos as 3)
         };
         Uint16 indices[] = {  
-            0, 1, 2, // first triangle
-            0, 2, 3  // second triangle
+            // Front face
+            0, 1, 2,
+            2, 3, 0,
+
+            // Back face
+            4, 5, 6,
+            6, 7, 4,
+
+            // Top face
+            8, 9, 10,
+            10, 11, 8,
+
+            // Bottom face
+            12, 13, 14,
+            14, 15, 12,
+
+            // Right face
+            16, 17, 18,
+            18, 19, 16,
+
+            // Left face
+            20, 21, 22,
+            22, 23, 20
         };
+        Uint16 verticesCount = sizeof(vertices) / sizeof(Vertex);
 
         // create the vertex buffer
         SDL_GPUBufferCreateInfo vertexBufferInfo{};
@@ -236,7 +289,7 @@ namespace deep
         // fill the transfer buffer
         Vertex* transferData = (Vertex*)SDL_MapGPUTransferBuffer(renderContext.device, bufferTransferBuffer, false);
         SDL_memcpy(transferData, (void*)vertices, sizeof(vertices));
-        Uint16* indexData = (Uint16*) &transferData[4];
+        Uint16* indexData = (Uint16*) &transferData[verticesCount];
         SDL_memcpy(indexData, (void*)indices, sizeof(indices));
 
         SDL_UnmapGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
@@ -334,7 +387,7 @@ namespace deep
             SDL_BindGPUFragmentSamplers(renderPass, 0, &textureSamplerBinding, 1);
 
             // issue a draw call
-            SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
+            SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);
 
             // end the render pass
             SDL_EndGPURenderPass(renderPass);
