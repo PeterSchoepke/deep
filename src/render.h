@@ -1,11 +1,14 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "assets.h"
 
 namespace deep
 {
-    typedef struct RenderContext
+    struct RenderContext
     {
         SDL_Window* window;
         SDL_GPUDevice* device;
@@ -13,18 +16,24 @@ namespace deep
 
         SDL_GPUTexture* texture;
         SDL_GPUSampler* sampler;
-    } RenderContext;
+    };
 
-    typedef struct RenderData
+    struct RenderData
     {
         SDL_GPUBuffer* vertexBuffer;
         SDL_GPUBuffer* indexBuffer;
-    } RenderData;
+        glm::mat4 transform;
+    };
 
     struct Vertex
     {
         float x, y, z;      //vec3 position
         float r, g, b, a;   //vec4 color
+    };
+
+    struct VertexUniformBuffer
+    {
+        glm::mat4 transform;
     };
 
     void Create_Window(RenderContext& renderContext);

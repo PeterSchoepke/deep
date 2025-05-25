@@ -36,7 +36,7 @@ namespace deep
         vertexInfo.num_samplers = 0;
         vertexInfo.num_storage_buffers = 0;
         vertexInfo.num_storage_textures = 0;
-        vertexInfo.num_uniform_buffers = 0;
+        vertexInfo.num_uniform_buffers = 1;
 
         SDL_GPUShader* vertexShader = SDL_CreateGPUShader(renderContext.device, &vertexInfo);
 
@@ -269,6 +269,10 @@ namespace deep
         SDL_EndGPUCopyPass(copyPass);
         SDL_SubmitGPUCommandBuffer(commandBuffer);
         SDL_ReleaseGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
+
+        renderData.transform = glm::mat4(1.0f);
+        renderData.transform = glm::rotate(renderData.transform, glm::radians(45.0f), glm::vec3(0.0, 0.0, 1.0));
+        renderData.transform = glm::scale(renderData.transform, glm::vec3(0.5, 0.5, 0.5)); 
     }
     void Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData){
         // release buffers
@@ -278,6 +282,9 @@ namespace deep
 
     void Render(RenderContext& renderContext, RenderData& renderData)
     {
+        VertexUniformBuffer vertexUniformBuffer{};
+        vertexUniformBuffer.transform = renderData.transform;
+
         // acquire the command buffer
         SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
 
@@ -300,6 +307,8 @@ namespace deep
         colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
+
+            SDL_PushGPUFragmentUniformData(commandBuffer, 0, &vertexUniformBuffer, sizeof(VertexUniformBuffer));
 
             // begin a render pass
             SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
