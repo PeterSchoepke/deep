@@ -123,13 +123,10 @@ namespace deep
     void Destroy_Render_Pipeline(RenderContext& renderContext)
     {
         // release the pipeline
-        SDL_ReleaseGPUGraphicsPipeline(renderContext.device, renderContext.graphicsPipeline);
-        // release the texture and sampler
-        SDL_ReleaseGPUTexture(renderContext.device, renderContext.texture);
-        SDL_ReleaseGPUSampler(renderContext.device, renderContext.sampler);
+        SDL_ReleaseGPUGraphicsPipeline(renderContext.device, renderContext.graphicsPipeline);        
     }
 
-    void Create_Render_Data(RenderContext& renderContext, RenderData& renderData)
+    void Load_Textures(RenderContext& renderContext)
     {
         SDL_Surface *imageData = Load_Image("diffuse.bmp", 4);
             if (imageData == NULL)
@@ -173,6 +170,39 @@ namespace deep
         SDL_memcpy(textureTransferPtr, imageData->pixels, imageData->w * imageData->h * 4);
         SDL_UnmapGPUTransferBuffer(renderContext.device, textureTransferBuffer);
 
+        // start a copy pass
+        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
+        SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
+
+        SDL_GPUTextureTransferInfo textureTransferInfo{};
+        textureTransferInfo.transfer_buffer = textureTransferBuffer;
+        textureTransferInfo.offset = 0; /* Zeros out the rest */
+        SDL_GPUTextureRegion textureRegion{};
+        textureRegion.texture = renderContext.texture;
+        textureRegion.w = imageData->w;
+        textureRegion.h = imageData->h;
+        textureRegion.d = 1;
+        SDL_UploadToGPUTexture(
+            copyPass,
+            &textureTransferInfo,
+            &textureRegion,
+            false
+        );
+
+        SDL_EndGPUCopyPass(copyPass);
+        SDL_SubmitGPUCommandBuffer(commandBuffer);
+        SDL_DestroySurface(imageData);
+        SDL_ReleaseGPUTransferBuffer(renderContext.device, textureTransferBuffer);
+    }
+    void Destroy_Textures(RenderContext& renderContext)
+    {
+        // release the texture and sampler
+        SDL_ReleaseGPUTexture(renderContext.device, renderContext.texture);
+        SDL_ReleaseGPUSampler(renderContext.device, renderContext.sampler);
+    }
+
+    void Create_Render_Data(RenderContext& renderContext, RenderData& renderData)
+    {
         Vertex vertices[]
         {
             {-0.5f,  0.5f, 0.0f,   0.0f, 1.0f}, // top left
@@ -235,28 +265,10 @@ namespace deep
         indexRegion.offset = 0;
         SDL_UploadToGPUBuffer(copyPass, &indexBufferlocation, &indexRegion, false);
 
-        // upload the texture
-        SDL_GPUTextureTransferInfo textureTransferInfo{};
-        textureTransferInfo.transfer_buffer = textureTransferBuffer;
-        textureTransferInfo.offset = 0; /* Zeros out the rest */
-        SDL_GPUTextureRegion textureRegion{};
-        textureRegion.texture = renderContext.texture;
-        textureRegion.w = imageData->w;
-        textureRegion.h = imageData->h;
-        textureRegion.d = 1;
-        SDL_UploadToGPUTexture(
-            copyPass,
-            &textureTransferInfo,
-            &textureRegion,
-            false
-        );
-
         // end the copy pass
         SDL_EndGPUCopyPass(copyPass);
         SDL_SubmitGPUCommandBuffer(commandBuffer);
-        SDL_DestroySurface(imageData);
         SDL_ReleaseGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
-        SDL_ReleaseGPUTransferBuffer(renderContext.device, textureTransferBuffer);
     }
     void Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData){
         // release buffers
