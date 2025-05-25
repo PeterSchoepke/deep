@@ -309,7 +309,7 @@ namespace deep
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
 
-            SDL_PushGPUFragmentUniformData(commandBuffer, 0, &vertexUniformBuffer, sizeof(VertexUniformBuffer));
+            SDL_PushGPUVertexUniformData(commandBuffer, 0, &vertexUniformBuffer, sizeof(VertexUniformBuffer));
 
             // begin a render pass
             SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
