@@ -6,11 +6,13 @@ layout (location = 1) in vec2 a_texcoord;
 layout (location = 0) out vec2 v_texcoord;
 
 layout(std140, set = 1, binding = 0) uniform UniformBlock {
-    mat4 transform;
+    mat4 model;
+    mat4 view;
+    mat4 projection;
 };
 
 void main()
 {
-    gl_Position = transform * vec4(a_position, 1.0f);
+    gl_Position = projection * view * model * vec4(a_position, 1.0);
     v_texcoord = a_texcoord;
 }

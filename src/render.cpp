@@ -271,8 +271,7 @@ namespace deep
         SDL_ReleaseGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
 
         renderData.transform = glm::mat4(1.0f);
-        renderData.transform = glm::rotate(renderData.transform, glm::radians(45.0f), glm::vec3(0.0, 0.0, 1.0));
-        renderData.transform = glm::scale(renderData.transform, glm::vec3(0.5, 0.5, 0.5)); 
+        renderData.transform = glm::rotate(renderData.transform, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     }
     void Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData){
         // release buffers
@@ -280,10 +279,12 @@ namespace deep
         SDL_ReleaseGPUBuffer(renderContext.device, renderData.indexBuffer);
     }
 
-    void Render(RenderContext& renderContext, RenderData& renderData)
+    void Render(RenderContext& renderContext, Camera& camera, RenderData& renderData)
     {
         VertexUniformBuffer vertexUniformBuffer{};
-        vertexUniformBuffer.transform = renderData.transform;
+        vertexUniformBuffer.model = renderData.transform;
+        vertexUniformBuffer.view = camera.view;
+        vertexUniformBuffer.projection = camera.projection;
 
         // acquire the command buffer
         SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);

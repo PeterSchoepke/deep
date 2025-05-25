@@ -7,6 +7,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     main.cpp
     assets.h
     assets.cpp
+    camera.h
+    camera.cpp
     render.h
     render.cpp
 )

@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "assets.h"
+#include "camera.h"
 
 namespace deep
 {
@@ -33,7 +34,9 @@ namespace deep
 
     struct VertexUniformBuffer
     {
-        glm::mat4 transform;
+        glm::mat4 model;
+        glm::mat4 view;
+        glm::mat4 projection;
     };
 
     void Create_Window(RenderContext& renderContext);
@@ -48,5 +51,5 @@ namespace deep
     void Create_Render_Data(RenderContext& renderContext, RenderData& renderData);
     void Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData);
 
-    void Render(RenderContext& renderContext, RenderData& renderData);
+    void Render(RenderContext& renderContext, Camera& camera, RenderData& renderData);
 }

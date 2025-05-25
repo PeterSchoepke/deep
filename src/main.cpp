@@ -2,22 +2,25 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
 #include "render.h"
+#include "camera.h"
 
 deep::RenderContext renderContext{};
 deep::RenderData renderData{};
+deep::Camera camera{};
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     deep::Create_Window(renderContext);
     deep::Create_Render_Pipeline(renderContext);
     deep::Load_Textures(renderContext);
+    deep::InitCamera(camera);
     deep::Create_Render_Data(renderContext, renderData);
     return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    deep::Render(renderContext, renderData);
+    deep::Render(renderContext, camera, renderData);
     return SDL_APP_CONTINUE;
 }
 
