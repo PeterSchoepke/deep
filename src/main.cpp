@@ -3,20 +3,20 @@
 #include <SDL3/SDL.h>
 #include "render.h"
 
-RenderContext renderContext{};
-RenderData renderData{};
+deep::RenderContext renderContext{};
+deep::RenderData renderData{};
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
-    DEEP_Create_Window(renderContext);
-    DEEP_Create_Render_Pipeline(renderContext);
-    DEEP_Create_Render_Data(renderContext, renderData);
+    deep::Create_Window(renderContext);
+    deep::Create_Render_Pipeline(renderContext);
+    deep::Create_Render_Data(renderContext, renderData);
     return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    DEEP_Render(renderContext, renderData);
+    deep::Render(renderContext, renderData);
     return SDL_APP_CONTINUE;
 }
 
@@ -33,7 +33,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
-    DEEP_Destroy_Render_Data(renderContext, renderData);
-    DEEP_Destroy_Render_Pipeline(renderContext);
-    DEEP_Destroy_Window(renderContext);
+    deep::Destroy_Render_Data(renderContext, renderData);
+    deep::Destroy_Render_Pipeline(renderContext);
+    deep::Destroy_Window(renderContext);
 }

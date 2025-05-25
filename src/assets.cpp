@@ -1,36 +1,39 @@
 #include "assets.h"
 
-SDL_Surface* DEEP_Load_Image(const char* imageFilename, int desiredChannels)
+namespace deep
 {
-    char fullPath[256];
-    SDL_Surface *result;
-    SDL_PixelFormat format;
-
-    SDL_snprintf(fullPath, sizeof(fullPath), "ressources/%s", imageFilename);
-
-    result = SDL_LoadBMP(fullPath);
-    if (result == NULL)
+    SDL_Surface* Load_Image(const char* imageFilename, int desiredChannels)
     {
-        SDL_Log("Failed to load BMP: %s", SDL_GetError());
-        return NULL;
-    }
+        char fullPath[256];
+        SDL_Surface *result;
+        SDL_PixelFormat format;
 
-    if (desiredChannels == 4)
-    {
-        format = SDL_PIXELFORMAT_ABGR8888;
-    }
-    else
-    {
-        SDL_assert(!"Unexpected desiredChannels");
-        SDL_DestroySurface(result);
-        return NULL;
-    }
-    if (result->format != format)
-    {
-        SDL_Surface *next = SDL_ConvertSurface(result, format);
-        SDL_DestroySurface(result);
-        result = next;
-    }
+        SDL_snprintf(fullPath, sizeof(fullPath), "ressources/%s", imageFilename);
 
-    return result;
+        result = SDL_LoadBMP(fullPath);
+        if (result == NULL)
+        {
+            SDL_Log("Failed to load BMP: %s", SDL_GetError());
+            return NULL;
+        }
+
+        if (desiredChannels == 4)
+        {
+            format = SDL_PIXELFORMAT_ABGR8888;
+        }
+        else
+        {
+            SDL_assert(!"Unexpected desiredChannels");
+            SDL_DestroySurface(result);
+            return NULL;
+        }
+        if (result->format != format)
+        {
+            SDL_Surface *next = SDL_ConvertSurface(result, format);
+            SDL_DestroySurface(result);
+            result = next;
+        }
+
+        return result;
+    }
 }
