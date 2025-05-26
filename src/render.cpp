@@ -360,17 +360,8 @@ namespace deep
         SDL_ReleaseGPUBuffer(renderContext.device, renderData.indexBuffer);
     }
 
-    void Render(RenderContext& renderContext, Camera& camera, RenderData& renderData)
+    void Render(RenderContext& renderContext, Camera& camera, Meshes& meshes)
     {
-        // Only for test
-        renderData.transform = glm::rotate(renderData.transform, (0.01f) * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-        // End only for Test
-
-        VertexUniformBuffer vertexUniformBuffer{};
-        vertexUniformBuffer.model = renderData.transform;
-        vertexUniformBuffer.view = camera.view;
-        vertexUniformBuffer.projection = camera.projection;
-
         // acquire the command buffer
         SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
 
@@ -404,24 +395,15 @@ namespace deep
 		depthStencilTargetInfo.stencil_load_op = SDL_GPU_LOADOP_CLEAR;
 		depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
 
-            SDL_PushGPUVertexUniformData(commandBuffer, 0, &vertexUniformBuffer, sizeof(VertexUniformBuffer));
-
             // begin a render pass
             SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, &depthStencilTargetInfo);
 
             // bind the pipeline
             SDL_BindGPUGraphicsPipeline(renderPass, renderContext.graphicsPipeline);
 
-            // bind the vertex buffer
-            SDL_GPUBufferBinding vertexBufferBinding{};
-            vertexBufferBinding.buffer = renderData.vertexBuffer;
-            vertexBufferBinding.offset = 0;
-            SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
-
-            SDL_GPUBufferBinding indexBufferBinding{};
-            indexBufferBinding.buffer = renderData.indexBuffer;
-            indexBufferBinding.offset = 0;
-            SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+            VertexUniformBuffer vertexUniformBuffer{};
+            vertexUniformBuffer.view = camera.view;
+            vertexUniformBuffer.projection = camera.projection;
 
             SDL_GPUTextureSamplerBinding textureSamplerBinding[2];
             textureSamplerBinding[0].texture = renderContext.texture;
@@ -429,9 +411,24 @@ namespace deep
             textureSamplerBinding[1].texture = renderContext.sceneDepthTexture;
             textureSamplerBinding[1].sampler = renderContext.sampler;
             SDL_BindGPUFragmentSamplers(renderPass, 0, textureSamplerBinding, 1);
+            for (int i = 0; i < meshes.count; ++i) {
+                vertexUniformBuffer.model = meshes.data[i].transform;
+                SDL_PushGPUVertexUniformData(commandBuffer, 0, &vertexUniformBuffer, sizeof(VertexUniformBuffer));
 
-            // issue a draw call
-            SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);
+                // bind the vertex buffer
+                SDL_GPUBufferBinding vertexBufferBinding{};
+                vertexBufferBinding.buffer = meshes.data[i].vertexBuffer;
+                vertexBufferBinding.offset = 0;
+                SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
+
+                SDL_GPUBufferBinding indexBufferBinding{};
+                indexBufferBinding.buffer = meshes.data[i].indexBuffer;
+                indexBufferBinding.offset = 0;
+                SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+
+                // issue a draw call
+                SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);
+            }
 
             // end the render pass
             SDL_EndGPURenderPass(renderPass);
