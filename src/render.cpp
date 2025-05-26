@@ -69,7 +69,7 @@ namespace deep
         pipelineInfo.vertex_shader = vertexShader;
         pipelineInfo.fragment_shader = fragmentShader;
         pipelineInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-        
+
         // describe the vertex buffers
         SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1];
         vertexBufferDesctiptions[0].slot = 0;
@@ -113,6 +113,13 @@ namespace deep
         pipelineInfo.target_info.num_color_targets = 1;
         pipelineInfo.target_info.color_target_descriptions = colorTargetDescriptions;
 
+        // Depth Testing
+        pipelineInfo.depth_stencil_state.enable_depth_test = true;
+        pipelineInfo.depth_stencil_state.enable_depth_write = true;
+        pipelineInfo.depth_stencil_state.compare_op = SDL_GPUCompareOp::SDL_GPU_COMPAREOP_LESS;
+        pipelineInfo.target_info.has_depth_stencil_target = true;
+        pipelineInfo.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+
         // create the pipeline
         renderContext.graphicsPipeline = SDL_CreateGPUGraphicsPipeline(renderContext.device, &pipelineInfo);
 
@@ -124,6 +131,27 @@ namespace deep
     {
         // release the pipeline
         SDL_ReleaseGPUGraphicsPipeline(renderContext.device, renderContext.graphicsPipeline);        
+    }
+
+    void Create_Depth_Buffer(RenderContext& renderContext)
+    {
+        int sceneWidth, sceneHeight;
+		SDL_GetWindowSizeInPixels(renderContext.window, &sceneWidth, &sceneHeight);
+
+        SDL_GPUTextureCreateInfo textureCreateInfo{};
+        textureCreateInfo.type = SDL_GPU_TEXTURETYPE_2D;
+		textureCreateInfo.width = sceneWidth;
+		textureCreateInfo.height = sceneHeight;
+		textureCreateInfo.layer_count_or_depth = 1;
+		textureCreateInfo.num_levels = 1;
+		textureCreateInfo.sample_count = SDL_GPU_SAMPLECOUNT_1;
+		textureCreateInfo.format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+		textureCreateInfo.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+        renderContext.sceneDepthTexture = SDL_CreateGPUTexture(renderContext.device, &textureCreateInfo);
+    }
+    void Destroy_Depth_Buffer(RenderContext& renderContext)
+    {
+        SDL_ReleaseGPUTexture(renderContext.device, renderContext.sceneDepthTexture);
     }
 
     void Load_Textures(RenderContext& renderContext)
@@ -334,6 +362,10 @@ namespace deep
 
     void Render(RenderContext& renderContext, Camera& camera, RenderData& renderData)
     {
+        // Only for test
+        renderData.transform = glm::rotate(renderData.transform, (0.01f) * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        // End only for Test
+
         VertexUniformBuffer vertexUniformBuffer{};
         vertexUniformBuffer.model = renderData.transform;
         vertexUniformBuffer.view = camera.view;
@@ -362,10 +394,20 @@ namespace deep
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
 
+        SDL_GPUDepthStencilTargetInfo depthStencilTargetInfo = {};
+		depthStencilTargetInfo.texture = renderContext.sceneDepthTexture;
+		depthStencilTargetInfo.cycle = true;
+		depthStencilTargetInfo.clear_depth = 1;
+		depthStencilTargetInfo.clear_stencil = 0;
+		depthStencilTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
+		depthStencilTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
+		depthStencilTargetInfo.stencil_load_op = SDL_GPU_LOADOP_CLEAR;
+		depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
+
             SDL_PushGPUVertexUniformData(commandBuffer, 0, &vertexUniformBuffer, sizeof(VertexUniformBuffer));
 
             // begin a render pass
-            SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
+            SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, &depthStencilTargetInfo);
 
             // bind the pipeline
             SDL_BindGPUGraphicsPipeline(renderPass, renderContext.graphicsPipeline);
@@ -381,10 +423,12 @@ namespace deep
             indexBufferBinding.offset = 0;
             SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
 
-            SDL_GPUTextureSamplerBinding textureSamplerBinding{};
-            textureSamplerBinding.texture = renderContext.texture;
-            textureSamplerBinding.sampler = renderContext.sampler;
-            SDL_BindGPUFragmentSamplers(renderPass, 0, &textureSamplerBinding, 1);
+            SDL_GPUTextureSamplerBinding textureSamplerBinding[2];
+            textureSamplerBinding[0].texture = renderContext.texture;
+            textureSamplerBinding[0].sampler = renderContext.sampler;
+            textureSamplerBinding[1].texture = renderContext.sceneDepthTexture;
+            textureSamplerBinding[1].sampler = renderContext.sampler;
+            SDL_BindGPUFragmentSamplers(renderPass, 0, textureSamplerBinding, 1);
 
             // issue a draw call
             SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);

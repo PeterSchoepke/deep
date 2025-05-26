@@ -12,6 +12,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     deep::Create_Window(renderContext);
     deep::Create_Render_Pipeline(renderContext);
+    deep::Create_Depth_Buffer(renderContext);
     deep::Load_Textures(renderContext);
     deep::InitCamera(camera);
     deep::Create_Render_Data(renderContext, renderData);
@@ -39,6 +40,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
     deep::Destroy_Render_Data(renderContext, renderData);
     deep::Destroy_Textures(renderContext);
+    deep::Destroy_Depth_Buffer(renderContext);
     deep::Destroy_Render_Pipeline(renderContext);
     deep::Destroy_Window(renderContext);
 }

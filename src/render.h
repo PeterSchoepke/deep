@@ -17,6 +17,7 @@ namespace deep
 
         SDL_GPUTexture* texture;
         SDL_GPUSampler* sampler;
+        SDL_GPUTexture* sceneDepthTexture;
     };
 
     struct RenderData
@@ -44,6 +45,9 @@ namespace deep
 
     void Create_Render_Pipeline(RenderContext& renderContext);
     void Destroy_Render_Pipeline(RenderContext& renderContext);
+
+    void Create_Depth_Buffer(RenderContext& renderContext);
+    void Destroy_Depth_Buffer(RenderContext& renderContext);
 
     void Load_Textures(RenderContext& renderContext);
     void Destroy_Textures(RenderContext& renderContext);
