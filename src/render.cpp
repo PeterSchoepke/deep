@@ -402,7 +402,7 @@ namespace deep
             SDL_BindGPUGraphicsPipeline(renderPass, renderContext.graphicsPipeline);
 
             VertexUniformBuffer vertexUniformBuffer{};
-            vertexUniformBuffer.view = camera.view;
+            vertexUniformBuffer.view = CameraGetViewMatrix(camera);
             vertexUniformBuffer.projection = camera.projection;
 
             SDL_GPUTextureSamplerBinding textureSamplerBinding[2];

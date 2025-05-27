@@ -40,7 +40,18 @@ namespace deep
 
     struct Camera
     {
-        glm::mat4 view;
+        glm::vec3 position;
+        glm::vec3 front;
+        glm::vec3 up;
+        glm::vec3 right;
+        glm::vec3 worldUp;
+        
+        float yaw;
+        float pitch;
+        
+        float movementSpeed;
+        float mouseSensitivity;
+        
         glm::mat4 projection;
     };
 

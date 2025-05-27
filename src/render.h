@@ -6,6 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "assets.h"
 #include "data.h"
+#include "camera.h"
 
 namespace deep
 {   
