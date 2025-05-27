@@ -35,24 +35,16 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     const bool* keyboardState = SDL_GetKeyboardState(NULL);
 
-    if (keyboardState[SDL_SCANCODE_W]) {
-        deep::CameraProcessKeyboard(camera, SDL_SCANCODE_W, deltaTime);
-    }
-    if (keyboardState[SDL_SCANCODE_A]) {
-        deep::CameraProcessKeyboard(camera, SDL_SCANCODE_A, deltaTime);
-    }
-    if (keyboardState[SDL_SCANCODE_S]) {
-        deep::CameraProcessKeyboard(camera, SDL_SCANCODE_S, deltaTime);
-    }
-    if (keyboardState[SDL_SCANCODE_D]) {
-        deep::CameraProcessKeyboard(camera, SDL_SCANCODE_D, deltaTime);
-    }
-    if (keyboardState[SDL_SCANCODE_LSHIFT]) {
-        deep::CameraProcessKeyboard(camera, SDL_SCANCODE_LSHIFT, deltaTime);
-    }
-    if (keyboardState[SDL_SCANCODE_SPACE]) {
-        deep::CameraProcessKeyboard(camera, SDL_SCANCODE_SPACE, deltaTime);
-    }
+    deep::CameraProcessKeyboard(
+        camera, 
+        keyboardState[SDL_SCANCODE_W],
+        keyboardState[SDL_SCANCODE_S],
+        keyboardState[SDL_SCANCODE_A],
+        keyboardState[SDL_SCANCODE_D],
+        keyboardState[SDL_SCANCODE_SPACE],
+        keyboardState[SDL_SCANCODE_LSHIFT],
+        deltaTime
+    );
 
     deep::Render(renderContext, camera, meshes);
     return SDL_APP_CONTINUE;

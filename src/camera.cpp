@@ -21,21 +21,26 @@ namespace deep
         return glm::lookAt(camera.position, camera.position + camera.front, camera.up);
     }
 
-    void CameraProcessKeyboard(Camera& camera, SDL_Scancode key, float deltaTime)
+    void CameraProcessKeyboard(Camera& camera, bool forward, bool back, bool left, bool right, bool up, bool down, float deltaTime)
     {
-        float velocity = camera.movementSpeed * deltaTime;
-        if (key == SDL_SCANCODE_W)
-            camera.position += camera.front * velocity;
-        if (key == SDL_SCANCODE_S)
-            camera.position -= camera.front * velocity;
-        if (key == SDL_SCANCODE_A)
-            camera.position -= camera.right * velocity;
-        if (key == SDL_SCANCODE_D)
-            camera.position += camera.right * velocity;
-        if (key == SDL_SCANCODE_SPACE)
-            camera.position += glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
-        if (key == SDL_SCANCODE_LSHIFT)
-            camera.position += glm::vec3(0.0f, -1.0f, 0.0f) * velocity;
+        if(forward || back || left || right || up || down)
+        {
+            glm::vec3 movement = glm::vec3(0.0f, 0.0f, 0.0f);
+            if(forward || back || left || right)
+            {
+                if(forward) { movement.z -= 1.0f; }
+                if(back) { movement.z += 1.0f; }
+                if(left) { movement.x -= 1.0f; }
+                if(right) { movement.x += 1.0f; }
+                movement = glm::normalize(movement);
+            }
+
+            if(up) { movement.y += 1.0f; }
+            if(down) { movement.y -= 1.0f; }
+
+            float velocity = camera.movementSpeed * deltaTime;
+            camera.position += movement * velocity;
+        }
     }
 
     void CameraProcessMouseMovement(Camera& camera, float xoffset, float yoffset, bool constrainPitch)
