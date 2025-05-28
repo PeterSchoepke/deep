@@ -20,20 +20,26 @@ void main()
 {
     vec3 objectColor = vec3(texture(diffuse, v_texcoord));
 
-    vec3 normal = normalize(v_normal);
-    vec3 lightDirection = normalize(lightPosition - v_fragmentPosition); 
-    float diff = max(dot(normal, lightDirection), 0.0);
-    vec3 diffuse = diff * lightColor;
+    vec3 materialAmbient = objectColor * 0.1;
+    vec3 materialDiffuse = objectColor;
+    vec3 materialSpecular = objectColor * 1.5;
+    float materialShininess = 32;
 
-    float ambientStrength = 0.1;
-    vec3 ambient = ambientStrength * lightColor;
+    // ambient
+    vec3 ambient = lightColor * materialAmbient;
 
-    float specularStrength = 0.5;
-    vec3 viewDir = normalize(cameraPosition - v_fragmentPosition);
-    vec3 reflectDir = reflect(-lightDirection, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-    vec3 specular = specularStrength * spec * lightColor; 
+    // diffuse 
+    vec3 norm = normalize(v_normal);
+    vec3 lightDir = normalize(lightPosition - v_fragmentPosition);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = lightColor * (diff * materialDiffuse);
     
-    vec3 result = (ambient + diffuse + specular) * objectColor;
+    // specular
+    vec3 viewDir = normalize(cameraPosition - v_fragmentPosition);
+    vec3 reflectDir = reflect(-lightDir, norm);  
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), materialShininess);
+    vec3 specular = lightColor * (spec * materialSpecular);  
+        
+    vec3 result = ambient + diffuse + specular;
     FragColor = vec4(result, 1.0);
 }
