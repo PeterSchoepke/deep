@@ -49,7 +49,7 @@ namespace deep
             glm::vec3( 1.3f, -2.0f, -2.5f),  
             glm::vec3( 1.5f,  2.0f, -2.5f), 
             glm::vec3( 1.5f,  0.2f, -1.5f), 
-            glm::vec3(-1.3f,  1.0f, -1.5f)  
+            glm::vec3(1.2f, 1.0f, 2.0f)  
         };
 
         for(unsigned int i = 0; i < 10; i++)
@@ -61,6 +61,7 @@ namespace deep
             float angle = 20.0f * i; 
             meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
         }
+        meshes.data[9].transform = glm::scale(meshes.data[9].transform, glm::vec3(0.1f));
         meshes.count = 10;
     }
     void Destroy_Meshes(RenderContext& renderContext, Meshes& meshes)

@@ -29,6 +29,7 @@ namespace deep
     {
         float x, y, z;      //vec3 position
         float r, g, b, a;   //vec4 color
+        float nx, ny, nz;   //vec3 normals
     };
 
     struct VertexUniformBuffer
@@ -36,6 +37,15 @@ namespace deep
         glm::mat4 model;
         glm::mat4 view;
         glm::mat4 projection;
+    };
+
+    struct FragmentUniformBuffer
+    {
+        glm::vec3 lightColor;
+        float padding1;
+        glm::vec3 lightPosition;
+        float padding2;
+        glm::vec3 cameraPosition;
     };
 
     struct Camera

@@ -28,10 +28,11 @@ namespace deep
             glm::vec3 movement = glm::vec3(0.0f, 0.0f, 0.0f);
             if(forward || back || left || right)
             {
-                if(forward) { movement.z -= 1.0f; }
-                if(back) { movement.z += 1.0f; }
-                if(left) { movement.x -= 1.0f; }
-                if(right) { movement.x += 1.0f; }
+                if(forward) { movement += camera.front; }
+                if(back) { movement -= camera.front; }
+                if(left) { movement -= camera.right; }
+                if(right) { movement += camera.right; }
+                movement.y = 0.0f;
                 movement = glm::normalize(movement);
             }
 

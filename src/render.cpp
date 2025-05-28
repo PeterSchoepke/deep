@@ -57,7 +57,7 @@ namespace deep
         fragmentInfo.num_samplers = 1;
         fragmentInfo.num_storage_buffers = 0;
         fragmentInfo.num_storage_textures = 0;
-        fragmentInfo.num_uniform_buffers = 0;
+        fragmentInfo.num_uniform_buffers = 1;
 
         SDL_GPUShader* fragmentShader = SDL_CreateGPUShader(renderContext.device, &fragmentInfo);
 
@@ -81,7 +81,7 @@ namespace deep
         pipelineInfo.vertex_input_state.vertex_buffer_descriptions = vertexBufferDesctiptions;
 
         // describe the vertex attribute
-        SDL_GPUVertexAttribute vertexAttributes[2];
+        SDL_GPUVertexAttribute vertexAttributes[3];
 
         // a_position
         vertexAttributes[0].buffer_slot = 0;
@@ -89,13 +89,19 @@ namespace deep
         vertexAttributes[0].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
         vertexAttributes[0].offset = 0;
 
-        // a_color
+        // a_texcoord
         vertexAttributes[1].buffer_slot = 0;
         vertexAttributes[1].location = 1;
         vertexAttributes[1].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2;
         vertexAttributes[1].offset = sizeof(float) * 3;
 
-        pipelineInfo.vertex_input_state.num_vertex_attributes = 2;
+        // a_normal
+        vertexAttributes[2].buffer_slot = 0;
+        vertexAttributes[2].location = 2;
+        vertexAttributes[2].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
+        vertexAttributes[2].offset = sizeof(float) * 5;
+
+        pipelineInfo.vertex_input_state.num_vertex_attributes = 3;
         pipelineInfo.vertex_input_state.vertex_attributes = vertexAttributes;
 
         // describe the color target
@@ -234,40 +240,46 @@ namespace deep
         Vertex vertices[]
         {
             // Front face (Z = 0.5)
-            {-0.5f, -0.5f,  0.5f, 0.0f, 0.0f}, // 0
-            { 0.5f, -0.5f,  0.5f, 1.0f, 0.0f}, // 1
-            { 0.5f,  0.5f,  0.5f, 1.0f, 1.0f}, // 2
-            {-0.5f,  0.5f,  0.5f, 0.0f, 1.0f}, // 3
+            // Normal: (0.0f, 0.0f, 1.0f) - points along positive Z-axis
+            {-0.5f, -0.5f,  0.5f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f}, // 0
+            { 0.5f, -0.5f,  0.5f, 1.0f, 0.0f,  0.0f, 0.0f, 1.0f}, // 1
+            { 0.5f,  0.5f,  0.5f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f}, // 2
+            {-0.5f,  0.5f,  0.5f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f}, // 3
 
             // Back face (Z = -0.5)
-            {-0.5f, -0.5f, -0.5f, 1.0f, 0.0f}, // 4 (Note: UVs are often mirrored or rotated for back faces)
-            { 0.5f, -0.5f, -0.5f, 0.0f, 0.0f}, // 5
-            { 0.5f,  0.5f, -0.5f, 0.0f, 1.0f}, // 6
-            {-0.5f,  0.5f, -0.5f, 1.0f, 1.0f}, // 7
+            // Normal: (0.0f, 0.0f, -1.0f) - points along negative Z-axis
+            {-0.5f, -0.5f, -0.5f, 1.0f, 0.0f,  0.0f, 0.0f, -1.0f}, // 4
+            { 0.5f, -0.5f, -0.5f, 0.0f, 0.0f,  0.0f, 0.0f, -1.0f}, // 5
+            { 0.5f,  0.5f, -0.5f, 0.0f, 1.0f,  0.0f, 0.0f, -1.0f}, // 6
+            {-0.5f,  0.5f, -0.5f, 1.0f, 1.0f,  0.0f, 0.0f, -1.0f}, // 7
 
             // Top face (Y = 0.5)
-            {-0.5f,  0.5f,  0.5f, 0.0f, 1.0f}, // 8 (same pos as 3)
-            { 0.5f,  0.5f,  0.5f, 1.0f, 1.0f}, // 9 (same pos as 2)
-            { 0.5f,  0.5f, -0.5f, 1.0f, 0.0f}, // 10 (same pos as 6)
-            {-0.5f,  0.5f, -0.5f, 0.0f, 0.0f}, // 11 (same pos as 7)
+            // Normal: (0.0f, 1.0f, 0.0f) - points along positive Y-axis
+            {-0.5f,  0.5f,  0.5f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f}, // 8 (same pos as 3)
+            { 0.5f,  0.5f,  0.5f, 1.0f, 1.0f,  0.0f, 1.0f, 0.0f}, // 9 (same pos as 2)
+            { 0.5f,  0.5f, -0.5f, 1.0f, 0.0f,  0.0f, 1.0f, 0.0f}, // 10 (same pos as 6)
+            {-0.5f,  0.5f, -0.5f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f}, // 11 (same pos as 7)
 
             // Bottom face (Y = -0.5)
-            {-0.5f, -0.5f,  0.5f, 0.0f, 0.0f}, // 12 (same pos as 0)
-            { 0.5f, -0.5f,  0.5f, 1.0f, 0.0f}, // 13 (same pos as 1)
-            { 0.5f, -0.5f, -0.5f, 1.0f, 1.0f}, // 14 (same pos as 5)
-            {-0.5f, -0.5f, -0.5f, 0.0f, 1.0f}, // 15 (same pos as 4)
+            // Normal: (0.0f, -1.0f, 0.0f) - points along negative Y-axis
+            {-0.5f, -0.5f,  0.5f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f}, // 12 (same pos as 0)
+            { 0.5f, -0.5f,  0.5f, 1.0f, 0.0f,  0.0f, -1.0f, 0.0f}, // 13 (same pos as 1)
+            { 0.5f, -0.5f, -0.5f, 1.0f, 1.0f,  0.0f, -1.0f, 0.0f}, // 14 (same pos as 5)
+            {-0.5f, -0.5f, -0.5f, 0.0f, 1.0f,  0.0f, -1.0f, 0.0f}, // 15 (same pos as 4)
 
             // Right face (X = 0.5)
-            { 0.5f, -0.5f,  0.5f, 0.0f, 0.0f}, // 16 (same pos as 1)
-            { 0.5f, -0.5f, -0.5f, 1.0f, 0.0f}, // 17 (same pos as 5)
-            { 0.5f,  0.5f, -0.5f, 1.0f, 1.0f}, // 18 (same pos as 6)
-            { 0.5f,  0.5f,  0.5f, 0.0f, 1.0f}, // 19 (same pos as 2)
+            // Normal: (1.0f, 0.0f, 0.0f) - points along positive X-axis
+            { 0.5f, -0.5f,  0.5f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f}, // 16 (same pos as 1)
+            { 0.5f, -0.5f, -0.5f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f}, // 17 (same pos as 5)
+            { 0.5f,  0.5f, -0.5f, 1.0f, 1.0f,  1.0f, 0.0f, 0.0f}, // 18 (same pos as 6)
+            { 0.5f,  0.5f,  0.5f, 0.0f, 1.0f,  1.0f, 0.0f, 0.0f}, // 19 (same pos as 2)
 
             // Left face (X = -0.5)
-            {-0.5f, -0.5f,  0.5f, 1.0f, 0.0f}, // 20 (same pos as 0)
-            {-0.5f, -0.5f, -0.5f, 0.0f, 0.0f}, // 21 (same pos as 4)
-            {-0.5f,  0.5f, -0.5f, 0.0f, 1.0f}, // 22 (same pos as 7)
-            {-0.5f,  0.5f,  0.5f, 1.0f, 1.0f}  // 23 (same pos as 3)
+            // Normal: (-1.0f, 0.0f, 0.0f) - points along negative X-axis
+            {-0.5f, -0.5f,  0.5f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f}, // 20 (same pos as 0)
+            {-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}, // 21 (same pos as 4)
+            {-0.5f,  0.5f, -0.5f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f}, // 22 (same pos as 7)
+            {-0.5f,  0.5f,  0.5f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f}  // 23 (same pos as 3)
         };
         Uint16 indices[] = {  
             // Front face
@@ -380,7 +392,7 @@ namespace deep
 
         // create the color target
         SDL_GPUColorTargetInfo colorTargetInfo{};
-        colorTargetInfo.clear_color = {0/255.0f, 91/255.0f, 150/255.0f, 255/255.0f};
+        colorTargetInfo.clear_color = {0/255.0f, 0/255.0f, 0/255.0f, 255/255.0f};
         colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
@@ -404,6 +416,12 @@ namespace deep
             VertexUniformBuffer vertexUniformBuffer{};
             vertexUniformBuffer.view = CameraGetViewMatrix(camera);
             vertexUniformBuffer.projection = camera.projection;
+
+            FragmentUniformBuffer fragmentUniformBuffer{};
+            fragmentUniformBuffer.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+            fragmentUniformBuffer.lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
+            fragmentUniformBuffer.cameraPosition = camera.position;
+            SDL_PushGPUFragmentUniformData(commandBuffer, 0, &fragmentUniformBuffer, sizeof(FragmentUniformBuffer));
 
             SDL_GPUTextureSamplerBinding textureSamplerBinding[2];
             textureSamplerBinding[0].texture = renderContext.texture;
