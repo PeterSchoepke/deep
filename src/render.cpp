@@ -418,8 +418,10 @@ namespace deep
             vertexUniformBuffer.projection = camera.projection;
 
             FragmentUniformBuffer fragmentUniformBuffer{};
-            fragmentUniformBuffer.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-            fragmentUniformBuffer.lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
+            fragmentUniformBuffer.light.position = glm::vec3(1.2f, 1.0f, 2.0f);
+            fragmentUniformBuffer.light.ambient = glm::vec3(0.2f, 0.2f, 0.2f);
+            fragmentUniformBuffer.light.diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+            fragmentUniformBuffer.light.specular = glm::vec3(1.0f, 1.0f, 1.0f);
             fragmentUniformBuffer.cameraPosition = camera.position;
             SDL_PushGPUFragmentUniformData(commandBuffer, 0, &fragmentUniformBuffer, sizeof(FragmentUniformBuffer));
 

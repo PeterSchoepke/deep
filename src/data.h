@@ -39,13 +39,22 @@ namespace deep
         glm::mat4 projection;
     };
 
+    struct Light {
+        glm::vec3 position;
+        float padding1;
+    
+        glm::vec3 ambient;
+        float padding2;
+        glm::vec3 diffuse;
+        float padding3;
+        glm::vec3 specular;
+    };
+
     struct FragmentUniformBuffer
     {
-        glm::vec3 lightColor;
-        float padding1;
-        glm::vec3 lightPosition;
-        float padding2;
         glm::vec3 cameraPosition;
+        float padding1;
+        Light light;
     };
 
     struct Camera
