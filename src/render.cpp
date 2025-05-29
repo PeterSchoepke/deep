@@ -428,10 +428,21 @@ namespace deep
             vertexUniformBuffer.projection = camera.projection;
 
             FragmentUniformBuffer fragmentUniformBuffer{};
-            fragmentUniformBuffer.light.position = glm::vec3(1.2f, 1.0f, 2.0f);
-            fragmentUniformBuffer.light.ambient = glm::vec3(0.2f, 0.2f, 0.2f);
-            fragmentUniformBuffer.light.diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
-            fragmentUniformBuffer.light.specular = glm::vec3(1.0f, 1.0f, 1.0f);
+
+            glm::vec3 pointLightPositions[] = {
+                glm::vec3( 0.7f,  0.2f,  2.0f),
+                glm::vec3( 2.3f, -3.3f, -4.0f),
+                glm::vec3(-4.0f,  2.0f, -12.0f),
+                glm::vec3( 0.0f,  0.0f, -3.0f)
+            }; 
+
+            for (int i = 0; i < 4; ++i) {
+                fragmentUniformBuffer.lights[i].position = pointLightPositions[i];
+                fragmentUniformBuffer.lights[i].ambient = glm::vec3(0.2f, 0.2f, 0.2f);
+                fragmentUniformBuffer.lights[i].diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+                fragmentUniformBuffer.lights[i].specular = glm::vec3(1.0f, 1.0f, 1.0f);
+                fragmentUniformBuffer.lights[i].constantLinearQuadratic = glm::vec3(1.0f, 0.09f, 0.032f);
+            }
             fragmentUniformBuffer.cameraPosition = camera.position;
             SDL_PushGPUFragmentUniformData(commandBuffer, 0, &fragmentUniformBuffer, sizeof(FragmentUniformBuffer));
 

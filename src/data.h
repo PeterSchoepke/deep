@@ -50,13 +50,17 @@ namespace deep
         glm::vec3 diffuse;
         float padding3;
         glm::vec3 specular;
+        float padding4;
+
+        glm::vec3 constantLinearQuadratic;
+        float padding5;
     };
 
     struct FragmentUniformBuffer
     {
         glm::vec3 cameraPosition;
         float padding1;
-        Light light;
+        Light lights[4];
     };
 
     struct Camera
