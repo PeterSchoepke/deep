@@ -13,4 +13,5 @@ namespace deep
 
     void Load_Meshes(RenderContext& renderContext, Meshes& meshes);
     void Destroy_Meshes(RenderContext& renderContext, Meshes& meshes);
+    void Load_Lights(Lights& lights);
 } 

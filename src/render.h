@@ -26,5 +26,5 @@ namespace deep
     void Create_Render_Data(RenderContext& renderContext, RenderData& renderData);
     void Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData);
 
-    void Render(RenderContext& renderContext, Camera& camera, Meshes& meshes);
+    void Render(RenderContext& renderContext, Camera& camera, Meshes& meshes, Lights& lights);
 }

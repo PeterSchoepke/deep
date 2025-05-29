@@ -11,6 +11,7 @@ double lastFrameTime = 0;
 
 deep::RenderContext renderContext{};
 deep::Meshes meshes{};
+deep::Lights lights{};
 deep::Camera camera{};
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
@@ -21,6 +22,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::Load_Textures(renderContext);
     deep::CameraInit(camera, glm::vec3(0.0f, 0.0f, 3.0f));
     deep::Load_Meshes(renderContext, meshes);
+    deep::Load_Lights(lights);
 
     SDL_SetWindowRelativeMouseMode(renderContext.window, true);
 
@@ -46,7 +48,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         deltaTime
     );
 
-    deep::Render(renderContext, camera, meshes);
+    deep::Render(renderContext, camera, meshes, lights);
     return SDL_APP_CONTINUE;
 }
 

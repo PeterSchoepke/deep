@@ -20,11 +20,11 @@ struct Light {
 
     vec3 constantlinearQuadratic;
 };
-#define NR_POINT_LIGHTS 4  
 
 layout(std140, set = 3, binding = 0) uniform UniformBlock {
     vec3 cameraPosition;
-    Light lights[NR_POINT_LIGHTS];
+    Light lights[10];
+    int numberOfLights;
 };
 
 vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir);
@@ -35,7 +35,7 @@ void main()
     vec3 viewDir = normalize(cameraPosition - v_fragmentPosition);
 
     vec3 result = vec3(0.0, 0.0, 0.0);
-    for(int i = 0; i < NR_POINT_LIGHTS; i++)
+    for(int i = 0; i < numberOfLights; i++)
         result += CalcPointLight(lights[i], norm, v_fragmentPosition, viewDir);
     
     FragColor = vec4(result, 1.0);

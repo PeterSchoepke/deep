@@ -382,7 +382,7 @@ namespace deep
         SDL_ReleaseGPUBuffer(renderContext.device, renderData.indexBuffer);
     }
 
-    void Render(RenderContext& renderContext, Camera& camera, Meshes& meshes)
+    void Render(RenderContext& renderContext, Camera& camera, Meshes& meshes, Lights& lights)
     {
         // acquire the command buffer
         SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
@@ -429,20 +429,14 @@ namespace deep
 
             FragmentUniformBuffer fragmentUniformBuffer{};
 
-            glm::vec3 pointLightPositions[] = {
-                glm::vec3( 0.7f,  0.2f,  2.0f),
-                glm::vec3( 2.3f, -3.3f, -4.0f),
-                glm::vec3(-4.0f,  2.0f, -12.0f),
-                glm::vec3( 0.0f,  0.0f, -3.0f)
-            }; 
-
-            for (int i = 0; i < 4; ++i) {
-                fragmentUniformBuffer.lights[i].position = pointLightPositions[i];
+            for (int i = 0; i < lights.count; ++i) {
+                fragmentUniformBuffer.lights[i].position = lights.data[i];
                 fragmentUniformBuffer.lights[i].ambient = glm::vec3(0.2f, 0.2f, 0.2f);
                 fragmentUniformBuffer.lights[i].diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
                 fragmentUniformBuffer.lights[i].specular = glm::vec3(1.0f, 1.0f, 1.0f);
                 fragmentUniformBuffer.lights[i].constantLinearQuadratic = glm::vec3(1.0f, 0.09f, 0.032f);
             }
+            fragmentUniformBuffer.numberOfLights = lights.count;
             fragmentUniformBuffer.cameraPosition = camera.position;
             SDL_PushGPUFragmentUniformData(commandBuffer, 0, &fragmentUniformBuffer, sizeof(FragmentUniformBuffer));
 

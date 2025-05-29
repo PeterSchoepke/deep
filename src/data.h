@@ -60,7 +60,8 @@ namespace deep
     {
         glm::vec3 cameraPosition;
         float padding1;
-        Light lights[4];
+        Light lights[10];
+        int numberOfLights;
     };
 
     struct Camera
@@ -83,6 +84,12 @@ namespace deep
     struct Meshes
     {
         RenderData data[10];
+        int count = 0;
+    };
+
+    struct Lights
+    {
+        glm::vec3 data[10];
         int count = 0;
     };
 }
