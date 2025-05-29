@@ -13,7 +13,9 @@ namespace deep
         SDL_GPUDevice* device;
         SDL_GPUGraphicsPipeline* graphicsPipeline;
 
-        SDL_GPUTexture* texture;
+        SDL_GPUTexture* diffuseMap;
+        SDL_GPUTexture* specularMap;
+        SDL_GPUTexture* shininessMap;
         SDL_GPUSampler* sampler;
         SDL_GPUTexture* sceneDepthTexture;
     };

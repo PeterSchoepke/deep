@@ -20,6 +20,7 @@ namespace deep
     void Destroy_Depth_Buffer(RenderContext& renderContext);
 
     void Load_Textures(RenderContext& renderContext);
+    SDL_GPUTexture* Load_Texture(RenderContext& renderContext, const char *filename);
     void Destroy_Textures(RenderContext& renderContext);
 
     void Create_Render_Data(RenderContext& renderContext, RenderData& renderData);

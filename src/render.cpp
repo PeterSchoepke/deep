@@ -54,7 +54,7 @@ namespace deep
         fragmentInfo.entrypoint = "main";
         fragmentInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
         fragmentInfo.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-        fragmentInfo.num_samplers = 1;
+        fragmentInfo.num_samplers = 3;
         fragmentInfo.num_storage_buffers = 0;
         fragmentInfo.num_storage_textures = 0;
         fragmentInfo.num_uniform_buffers = 1;
@@ -162,7 +162,13 @@ namespace deep
 
     void Load_Textures(RenderContext& renderContext)
     {
-        SDL_Surface *imageData = Load_Image("diffuse.bmp", 4);
+        renderContext.diffuseMap = Load_Texture(renderContext, "diffuse.bmp");
+        renderContext.specularMap = Load_Texture(renderContext, "specular.bmp");
+        renderContext.shininessMap = Load_Texture(renderContext, "shininess.bmp");
+    }
+    SDL_GPUTexture* Load_Texture(RenderContext& renderContext, const char *filename)
+    {
+        SDL_Surface *imageData = Load_Image(filename, 4);
             if (imageData == NULL)
             {
                 SDL_Log("Could not load image data!");
@@ -186,7 +192,7 @@ namespace deep
         textureCreateInfo.layer_count_or_depth = 1;
         textureCreateInfo.num_levels = 1;
         textureCreateInfo.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        renderContext.texture = SDL_CreateGPUTexture(renderContext.device, &textureCreateInfo);
+        SDL_GPUTexture* texture = SDL_CreateGPUTexture(renderContext.device, &textureCreateInfo);
 
         SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo{};
         transferBufferCreateInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
@@ -212,7 +218,7 @@ namespace deep
         textureTransferInfo.transfer_buffer = textureTransferBuffer;
         textureTransferInfo.offset = 0; /* Zeros out the rest */
         SDL_GPUTextureRegion textureRegion{};
-        textureRegion.texture = renderContext.texture;
+        textureRegion.texture = texture;
         textureRegion.w = imageData->w;
         textureRegion.h = imageData->h;
         textureRegion.d = 1;
@@ -227,11 +233,15 @@ namespace deep
         SDL_SubmitGPUCommandBuffer(commandBuffer);
         SDL_DestroySurface(imageData);
         SDL_ReleaseGPUTransferBuffer(renderContext.device, textureTransferBuffer);
+
+        return texture;
     }
     void Destroy_Textures(RenderContext& renderContext)
     {
         // release the texture and sampler
-        SDL_ReleaseGPUTexture(renderContext.device, renderContext.texture);
+        SDL_ReleaseGPUTexture(renderContext.device, renderContext.diffuseMap);
+        SDL_ReleaseGPUTexture(renderContext.device, renderContext.specularMap);
+        SDL_ReleaseGPUTexture(renderContext.device, renderContext.shininessMap);
         SDL_ReleaseGPUSampler(renderContext.device, renderContext.sampler);
     }
 
@@ -425,12 +435,16 @@ namespace deep
             fragmentUniformBuffer.cameraPosition = camera.position;
             SDL_PushGPUFragmentUniformData(commandBuffer, 0, &fragmentUniformBuffer, sizeof(FragmentUniformBuffer));
 
-            SDL_GPUTextureSamplerBinding textureSamplerBinding[2];
-            textureSamplerBinding[0].texture = renderContext.texture;
+            SDL_GPUTextureSamplerBinding textureSamplerBinding[4];
+            textureSamplerBinding[0].texture = renderContext.diffuseMap;
             textureSamplerBinding[0].sampler = renderContext.sampler;
-            textureSamplerBinding[1].texture = renderContext.sceneDepthTexture;
+            textureSamplerBinding[1].texture = renderContext.specularMap;
             textureSamplerBinding[1].sampler = renderContext.sampler;
-            SDL_BindGPUFragmentSamplers(renderPass, 0, textureSamplerBinding, 1);
+            textureSamplerBinding[2].texture = renderContext.shininessMap;
+            textureSamplerBinding[2].sampler = renderContext.sampler;
+            textureSamplerBinding[3].texture = renderContext.sceneDepthTexture;
+            textureSamplerBinding[3].sampler = renderContext.sampler;
+            SDL_BindGPUFragmentSamplers(renderPass, 0, textureSamplerBinding, 3);
             for (int i = 0; i < meshes.count; ++i) {
                 vertexUniformBuffer.model = meshes.data[i].transform;
                 SDL_PushGPUVertexUniformData(commandBuffer, 0, &vertexUniformBuffer, sizeof(VertexUniformBuffer));

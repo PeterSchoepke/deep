@@ -6,7 +6,10 @@ layout (location = 2) in vec3 v_fragmentPosition;
 
 layout (location = 0) out vec4 FragColor;
 
-layout (set = 2, binding = 0) uniform sampler2D diffuse;
+layout (set = 2, binding = 0) uniform sampler2D diffuseMap;
+layout (set = 2, binding = 1) uniform sampler2D specularMap;
+layout (set = 2, binding = 2) uniform sampler2D shininessMap;
+
 
 struct Light {
     vec3 position;
@@ -24,15 +27,12 @@ layout(std140, set = 3, binding = 0) uniform UniformBlock {
 
 void main()
 {
-    vec3 objectColor = vec3(texture(diffuse, v_texcoord));
-
-    vec3 materialAmbient = objectColor * 0.1;
-    vec3 materialDiffuse = objectColor;
-    vec3 materialSpecular = objectColor * 1.5;
-    float materialShininess = 32;
+    vec3 materialDiffuse = vec3(texture(diffuseMap, v_texcoord));
+    vec3 materialSpecular = vec3(texture(specularMap, v_texcoord));
+    float materialShininess = vec3(texture(shininessMap, v_texcoord)).r * 128;
 
     // ambient
-    vec3 ambient = light.ambient * materialAmbient;
+    vec3 ambient = light.ambient * materialDiffuse;
 
     // diffuse 
     vec3 norm = normalize(v_normal);
