@@ -88,9 +88,9 @@ create_render_pipeline :: proc(render_context: ^Render_Context) {
             enable_depth_write = true,
             compare_op = .LESS,
         },
-        /*rasterizer_state = {
+        rasterizer_state = {
             cull_mode = .BACK,
-        },*/
+        },
         target_info = {
             num_color_targets = 1,
             color_target_descriptions = &(sdl.GPUColorTargetDescription {
@@ -282,15 +282,15 @@ create_render_data :: proc(render_context: ^Render_Context, render_data: ^Render
         // Front face
         0, 1, 2,  2, 3, 0,
         // Back face
-        4, 5, 6,  6, 7, 4,
+        4, 7, 6,  6, 5, 4,
         // Top face
         8, 9, 10,  10, 11, 8,
         // Bottom face
-        12, 13, 14,  14, 15, 12,
+        12, 15, 14,  14, 13, 12,
         // Right face
         16, 17, 18,  18, 19, 16,
         // Left face
-        20, 21, 22,  22, 23, 20,
+        20, 23, 22,  22, 21, 20,
     }
 
     vertices_byte_size := len(vertices) * size_of(Vertex)
