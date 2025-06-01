@@ -11,16 +11,16 @@ Vec2 :: linalg.Vector2f32
 Mat4 :: linalg.Matrix4f32
 Quat :: quaternion128
 
-RenderContext :: struct {
+Render_Context :: struct {
     window: ^sdl.Window,
     device: ^sdl.GPUDevice,
-    graphicsPipeline: ^sdl.GPUGraphicsPipeline,
+    graphics_pipeline: ^sdl.GPUGraphicsPipeline,
 
-    diffuseMap: ^sdl.GPUTexture,
-    specularMap: ^sdl.GPUTexture,
-    shininessMap: ^sdl.GPUTexture,
+    diffuse_map: ^sdl.GPUTexture,
+    specular_map: ^sdl.GPUTexture,
+    shininess_map: ^sdl.GPUTexture,
     sampler: ^sdl.GPUSampler,
-    sceneDepthTexture: ^sdl.GPUTexture,
+    scene_depth_texture: ^sdl.GPUTexture,
 }
 
 Vertex :: struct {
@@ -29,14 +29,14 @@ Vertex :: struct {
 	normal: Vec3,
 }
 
-RenderData :: struct {
-    vertexBuffer: ^sdl.GPUBuffer,
-    indexBuffer: ^sdl.GPUBuffer,
+Render_Data :: struct {
+    vertex_buffer: ^sdl.GPUBuffer,
+    index_buffer: ^sdl.GPUBuffer,
     transform: Mat4,
 }
 
 Meshes :: struct {
-    data: [10]RenderData,
+    data: [10]Render_Data,
     count: int,
 }
 
@@ -45,7 +45,7 @@ Lights :: struct {
     count: int,
 }
 
-LightData :: struct {
+Light_Data :: struct {
     position: Vec3,
     _: f32,
 
@@ -56,7 +56,7 @@ LightData :: struct {
     specular: Vec3,
     _: f32,
 
-    constantLinearQuadratic: Vec3,
+    constant_linear_quadratic: Vec3,
     _: f32,
 }
 
@@ -67,10 +67,10 @@ VertexUniformBuffer :: struct #packed {
 }
 
 FragmentUniformBuffer :: struct #packed {
-    cameraPosition: Vec3,
+    camera_position: Vec3,
     _: f32,
-    lights: [10]LightData, // Matches Lights struct capacity
-    numberOfLights: i32,
+    lights: [10]Light_Data,
+    number_of_lights: i32,
 }
 
 Camera :: struct {
@@ -78,13 +78,13 @@ Camera :: struct {
     front: Vec3,
     up: Vec3,
     right: Vec3,
-    worldUp: Vec3,
+    world_up: Vec3,
 
     yaw: f32,
     pitch: f32,
     
-    movementSpeed: f32,
-    mouseSensitivity: f32,
+    movement_speed: f32,
+    mouse_sensitivity: f32,
     
     projection: Mat4,
 }
