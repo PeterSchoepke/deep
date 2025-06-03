@@ -8,6 +8,7 @@ import sdl "vendor:sdl3"
 
 Vec3 :: linalg.Vector3f32
 Vec2 :: linalg.Vector2f32
+Vec4 :: linalg.Vector4f32
 Mat4 :: linalg.Matrix4f32
 Quat :: quaternion128
 

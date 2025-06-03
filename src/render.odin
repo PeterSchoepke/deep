@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:mem"
@@ -7,6 +8,7 @@ import "core:slice"
 import "core:strings"
 import "core:c"
 import sdl "vendor:sdl3"
+import "vendor:cgltf"
 
 create_window :: proc(render_context: ^Render_Context) {
     ok := sdl.Init({.VIDEO}); assert(ok)
@@ -129,9 +131,9 @@ destroy_depth_buffer :: proc(render_context: ^Render_Context) {
 
 load_textures :: proc(render_context: ^Render_Context) {
     create_sampler(render_context)
-    render_context.diffuse_map = load_texture(render_context, "ressources/diffuse.bmp")
-    render_context.specular_map = load_texture(render_context, "ressources/specular.bmp")
-    render_context.shininess_map = load_texture(render_context, "ressources/shininess.bmp")
+    render_context.diffuse_map = load_texture(render_context, "ressources/images/diffuse.bmp")
+    render_context.specular_map = load_texture(render_context, "ressources/images/specular.bmp")
+    render_context.shininess_map = load_texture(render_context, "ressources/images/shininess.bmp")
 }
 create_sampler :: proc(render_context: ^Render_Context) {
     render_context.sampler = sdl.CreateGPUSampler(render_context.device, {
@@ -239,60 +241,83 @@ destroy_textures :: proc(render_context: ^Render_Context) {
     sdl.ReleaseGPUSampler(render_context.device, render_context.sampler)
 }
 
-create_render_data :: proc(render_context: ^Render_Context, render_data: ^Render_Data) {
-    vertices := []Vertex {
-        // Front face (Z = 0.5), Normal: (0.0, 0.0, 1.0)
-        {{-0.5, -0.5,  0.5}, {0.0, 0.0}, {0.0, 0.0, 1.0}}, // 0
-        {{ 0.5, -0.5,  0.5}, {1.0, 0.0}, {0.0, 0.0, 1.0}}, // 1
-        {{ 0.5,  0.5,  0.5}, {1.0, 1.0}, {0.0, 0.0, 1.0}}, // 2
-        {{-0.5,  0.5,  0.5}, {0.0, 1.0}, {0.0, 0.0, 1.0}}, // 3
-
-        // Back face (Z = -0.5), Normal: (0.0, 0.0, -1.0)
-        {{-0.5, -0.5, -0.5}, {1.0, 0.0}, {0.0, 0.0, -1.0}}, // 4
-        {{ 0.5, -0.5, -0.5}, {0.0, 0.0}, {0.0, 0.0, -1.0}}, // 5
-        {{ 0.5,  0.5, -0.5}, {0.0, 1.0}, {0.0, 0.0, -1.0}}, // 6
-        {{-0.5,  0.5, -0.5}, {1.0, 1.0}, {0.0, 0.0, -1.0}}, // 7
-
-        // Top face (Y = 0.5), Normal: (0.0, 1.0, 0.0)
-        {{-0.5,  0.5,  0.5}, {0.0, 1.0}, {0.0, 1.0, 0.0}}, // 8 (same pos as 3)
-        {{ 0.5,  0.5,  0.5}, {1.0, 1.0}, {0.0, 1.0, 0.0}}, // 9 (same pos as 2)
-        {{ 0.5,  0.5, -0.5}, {1.0, 0.0}, {0.0, 1.0, 0.0}}, // 10 (same pos as 6)
-        {{-0.5,  0.5, -0.5}, {0.0, 0.0}, {0.0, 1.0, 0.0}}, // 11 (same pos as 7)
-
-        // Bottom face (Y = -0.5), Normal: (0.0, -1.0, 0.0)
-        {{-0.5, -0.5,  0.5}, {0.0, 0.0}, {0.0, -1.0, 0.0}}, // 12 (same pos as 0)
-        {{ 0.5, -0.5,  0.5}, {1.0, 0.0}, {0.0, -1.0, 0.0}}, // 13 (same pos as 1)
-        {{ 0.5, -0.5, -0.5}, {1.0, 1.0}, {0.0, -1.0, 0.0}}, // 14 (same pos as 5)
-        {{-0.5, -0.5, -0.5}, {0.0, 1.0}, {0.0, -1.0, 0.0}}, // 15 (same pos as 4)
-
-        // Right face (X = 0.5), Normal: (1.0, 0.0, 0.0)
-        {{ 0.5, -0.5,  0.5}, {0.0, 0.0}, {1.0, 0.0, 0.0}}, // 16 (same pos as 1)
-        {{ 0.5, -0.5, -0.5}, {1.0, 0.0}, {1.0, 0.0, 0.0}}, // 17 (same pos as 5)
-        {{ 0.5,  0.5, -0.5}, {1.0, 1.0}, {1.0, 0.0, 0.0}}, // 18 (same pos as 6)
-        {{ 0.5,  0.5,  0.5}, {0.0, 1.0}, {1.0, 0.0, 0.0}}, // 19 (same pos as 2)
-
-        // Left face (X = -0.5), Normal: (-1.0, 0.0, 0.0)
-        {{-0.5, -0.5,  0.5}, {1.0, 0.0}, {-1.0, 0.0, 0.0}}, // 20 (same pos as 0)
-        {{-0.5, -0.5, -0.5}, {0.0, 0.0}, {-1.0, 0.0, 0.0}}, // 21 (same pos as 4)
-        {{-0.5,  0.5, -0.5}, {0.0, 1.0}, {-1.0, 0.0, 0.0}}, // 22 (same pos as 7)
-        {{-0.5,  0.5,  0.5}, {1.0, 1.0}, {-1.0, 0.0, 0.0}}, // 23 (same pos as 3)
+load_gltf :: proc(render_context: ^Render_Context, render_data: ^Render_Data, model_filename : string,) {
+    copyData :: proc(accessor: ^cgltf.accessor, dst: rawptr) {
+        bufferView := accessor.buffer_view
+        data := bufferView.data
+        if data == nil {
+            data = bufferView.buffer.data
+        }
+        mem.copy(dst, rawptr(uintptr(data) + uintptr(bufferView.offset)), int(bufferView.size))
     }
 
-    indices := []u16 {
-        // Front face
-        0, 1, 2,  2, 3, 0,
-        // Back face
-        4, 7, 6,  6, 5, 4,
-        // Top face
-        8, 9, 10,  10, 11, 8,
-        // Bottom face
-        12, 15, 14,  14, 13, 12,
-        // Right face
-        16, 17, 18,  18, 19, 16,
-        // Left face
-        20, 23, 22,  22, 21, 20,
+    filename: cstring = strings.clone_to_cstring(model_filename)
+    options: cgltf.options
+	data, result := cgltf.parse_file(options, filename)
+    defer cgltf.free(data)
+	if result != .success {
+        panic("Failed to load gltf file!")
     }
 
+    if cgltf.load_buffers(options, data, filename) != .success {
+        panic("Failed to load buffer gltf file!")
+    }
+
+    if len(data.meshes) > 0 {
+        for &primitive in data.meshes[0].primitives {  // Only support one mesh per file
+            if primitive.type != .triangles {
+                continue
+            }
+
+            indices := make([]u16, int(primitive.indices.count))
+            defer delete(indices)
+            if primitive.indices.component_type == .r_32u {
+                copyData(primitive.indices, &indices[0])
+            } else if primitive.indices.component_type == .r_16u {
+                data := make([]u16, int(primitive.indices.count))
+                copyData(primitive.indices, &data[0])
+                for &indice, index in indices {
+                    indice = u16(data[index])
+                }
+                delete(data)
+            } else if primitive.indices.component_type == .r_8u {
+                data := make([]u8, int(primitive.indices.count))
+                copyData(primitive.indices, &data[0])
+                for &indice, index in indices {
+                    indice = u16(data[index])
+                }
+                delete(data)
+            }
+
+            vertices := make(#soa[]Vertex, primitive.attributes[0].data.count)
+            defer delete(vertices)
+            for &attribute in primitive.attributes {
+                #partial switch attribute.type {
+                case .position:
+                    copyData(attribute.data, &vertices[0].pos)
+                case .texcoord:
+                    copyData(attribute.data, &vertices[0].uv)
+                case .normal:
+                    copyData(attribute.data, &vertices[0].normal)
+                }
+            }
+
+            fmt.println(indices)
+            fmt.println(vertices)
+            create_render_data(render_context, render_data, vertices, indices)
+        }
+    }
+}
+
+create_render_data :: proc(render_context: ^Render_Context, render_data: ^Render_Data, soa_vertices: #soa[]Vertex, indices: []u16) {
+    
+    vertices := make([]Vertex, len(soa_vertices))
+    defer delete(vertices)
+    for i := 0; i < len(soa_vertices); i += 1 {
+        vertices[i].pos = soa_vertices.pos[i];
+        vertices[i].uv = soa_vertices.uv[i];
+        vertices[i].normal = soa_vertices.normal[i];
+    }
     vertices_byte_size := len(vertices) * size_of(Vertex)
     indices_byte_size := len(indices) * size_of(u16)
 

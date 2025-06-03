@@ -18,7 +18,7 @@ load_meshes :: proc(render_context: ^Render_Context, meshes: ^Meshes) {
     }
 
     for i in 0..<10 {
-        create_render_data(render_context, &meshes.data[i])
+        load_gltf(render_context, &meshes.data[i], "ressources/models/cube.glb")
 
         meshes.data[i].transform = linalg.MATRIX4F32_IDENTITY
         meshes.data[i].transform = linalg.matrix4_translate_f32(cube_positions[i]) * meshes.data[i].transform
