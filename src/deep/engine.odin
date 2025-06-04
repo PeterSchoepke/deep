@@ -1,5 +1,6 @@
 package deep
 
+import "core:math/linalg"
 import sdl "vendor:sdl3"
 
 render_context: Render_Context
@@ -33,4 +34,18 @@ delta_time :: proc() -> f32 {
 
 mouse_lock :: proc(is_active: bool) {
 	ok := sdl.SetWindowRelativeMouseMode(render_context.window, is_active); assert(ok)
+}
+
+add_mesh :: proc(filename :string, position :Vec3) {
+	i := meshes.count
+	load_gltf(&render_context, &meshes.data[i], filename)
+	meshes.data[i].transform = linalg.MATRIX4F32_IDENTITY
+    meshes.data[i].transform = linalg.matrix4_translate_f32(position[i]) * meshes.data[i].transform
+	meshes.count += 1
+}
+
+add_light :: proc(position :Vec3) {
+	i := lights.count
+	lights.data[i] = position
+	lights.count += 1
 }

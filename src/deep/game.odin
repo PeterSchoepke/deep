@@ -50,6 +50,6 @@ load_lights :: proc(lights: ^Lights) {
 }
 
 demo_setup :: proc() {
-    load_meshes(&render_context, &meshes)
+    //load_meshes(&render_context, &meshes)
 	load_lights(&lights)
 }

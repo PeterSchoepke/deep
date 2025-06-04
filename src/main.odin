@@ -20,7 +20,9 @@ main :: proc() {
 }
 
 setup :: proc(){
-	deep.demo_setup()
+	deep.add_mesh("ressources/models/cube.glb", {0.0, 0.0, 0.0})
+	deep.add_light({0.5, 0.5, 3.0})
+
 	deep.set_camera_position({0.0, 0.0, 3.0});
 	deep.mouse_lock(true)
 }
