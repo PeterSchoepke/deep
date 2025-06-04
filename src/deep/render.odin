@@ -367,6 +367,7 @@ create_render_data :: proc(render_context: ^Render_Context, render_data: ^Render
     ok := sdl.SubmitGPUCommandBuffer(command_buffer); assert(ok)
     sdl.ReleaseGPUTransferBuffer(render_context.device, buffer_transfer_buffer)
 
+    render_data.index_count = u32(len(indices));
     render_data.transform = linalg.MATRIX4F32_IDENTITY
 }
 destroy_render_data :: proc(render_context: ^Render_Context, render_data: ^Render_Data) {
@@ -450,7 +451,7 @@ render :: proc() {
             offset = 0,
         }, ._16BIT)
 
-        sdl.DrawGPUIndexedPrimitives(render_pass, 36, 1, 0, 0, 0)
+        sdl.DrawGPUIndexedPrimitives(render_pass, meshes.data[i].index_count, 1, 0, 0, 0)
     }
 
     sdl.EndGPURenderPass(render_pass)

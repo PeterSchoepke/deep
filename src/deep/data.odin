@@ -33,6 +33,7 @@ Vertex :: struct {
 Render_Data :: struct {
     vertex_buffer: ^sdl.GPUBuffer,
     index_buffer: ^sdl.GPUBuffer,
+    index_count: u32,
     transform: Mat4,
 }
 
