@@ -1,5 +1,6 @@
 package deep
 
+import "core:math"
 import "core:math/linalg"
 import sdl "vendor:sdl3"
 
@@ -48,4 +49,10 @@ add_light :: proc(position :Vec3) {
 	i := lights.count
 	lights.data[i] = position
 	lights.count += 1
+}
+
+rotate_mesh :: proc(id :int, angle : f32) {
+	if meshes.count > 0 {
+		meshes.data[id].transform = linalg.matrix4_rotate(math.to_radians(angle), Vec3{0.0, 1.0, 0.0}) * meshes.data[id].transform
+	}
 }

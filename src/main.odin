@@ -13,7 +13,7 @@ main :: proc() {
 		delta_time := deep.delta_time()
 		if !input(delta_time) do break game_loop
 
-		update();
+		update(delta_time);
 
 		deep.render()
 	}
@@ -55,6 +55,6 @@ input :: proc(delta_time: f32) -> bool {
 	return true
 }
 
-update :: proc() {
-
+update :: proc(delta_time: f32) {
+	deep.rotate_mesh(0, delta_time * 30.0)
 }
