@@ -1,4 +1,4 @@
-package main
+package deep
 
 import "core:math"
 import "core:math/linalg"
@@ -47,4 +47,9 @@ load_lights :: proc(lights: ^Lights) {
         lights.data[i] = point_light_positions[i]
     }
     lights.count = 4
+}
+
+demo_setup :: proc() {
+    load_meshes(&render_context, &meshes)
+	load_lights(&lights)
 }

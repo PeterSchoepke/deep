@@ -1,4 +1,4 @@
-package main
+package deep
 
 import "core:fmt"
 import "core:math"
@@ -22,8 +22,8 @@ destroy_window :: proc(render_context: ^Render_Context) {
 }
 
 create_render_pipeline :: proc(render_context: ^Render_Context) {
-    vertex_code := #load("../shaders/vertex.spv")
-    fragment_code := #load("../shaders/fragment.spv")
+    vertex_code := #load("../../shaders/vertex.spv")
+    fragment_code := #load("../../shaders/fragment.spv")
 
     vertex_shader := sdl.CreateGPUShader(render_context.device, {
         code = raw_data(vertex_code),
@@ -374,7 +374,7 @@ destroy_render_data :: proc(render_context: ^Render_Context, render_data: ^Rende
     sdl.ReleaseGPUBuffer(render_context.device, render_data.index_buffer)
 }
 
-render :: proc(render_context: ^Render_Context, camera: ^Camera, meshes: ^Meshes, lights: ^Lights) {
+render :: proc() {
     command_buffer := sdl.AcquireGPUCommandBuffer(render_context.device)
     if command_buffer == nil {
         return
@@ -409,7 +409,7 @@ render :: proc(render_context: ^Render_Context, camera: ^Camera, meshes: ^Meshes
     sdl.BindGPUGraphicsPipeline(render_pass, render_context.graphics_pipeline)
 
     vertex_uniform_buffer: VertexUniformBuffer = {
-        view = camera_get_view_matrix(camera),
+        view = camera_get_view_matrix(),
         projection = camera.projection,
     }    
 

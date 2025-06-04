@@ -1,4 +1,4 @@
-package main
+package deep
 
 import "core:fmt"
 import "core:math"

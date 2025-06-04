@@ -1,45 +1,31 @@
 package main
 
 import sdl "vendor:sdl3"
-
-last_frame_time :f32 = 0
+import deep "deep"
 
 main :: proc() {
-	render_context: Render_Context
-	camera: Camera
-	lights: Lights
-	meshes: Meshes
+	deep.start()
+	defer deep.stop()
 
-	create_window(&render_context)
-	create_render_pipeline(&render_context)
-	create_depth_buffer(&render_context)
-	load_textures(&render_context)
-	camera_init(&camera, {0.0, 0.0, 3.0})
-	load_meshes(&render_context, &meshes)
-	load_lights(&lights)
-
-	ok := sdl.SetWindowRelativeMouseMode(render_context.window, true); assert(ok)
+	setup()
 
 	game_loop: for {
-		if !processEvents(&camera) do break game_loop
+		delta_time := deep.delta_time()
+		if !input(delta_time) do break game_loop
 
-		// update game state
+		update();
 
-		render(&render_context, &camera, &meshes, &lights)
+		deep.render()
 	}
-
-	destroy_meshes(&render_context, &meshes)
-	destroy_textures(&render_context)
-	destroy_depth_buffer(&render_context)
-	destroy_render_pipeline(&render_context)
-	destroy_window(&render_context)
 }
 
-processEvents :: proc(camera: ^Camera) -> bool {
-	current_time := f32(sdl.GetTicks()) / 1_000.0;
-    delta_time := current_time - last_frame_time;
-    last_frame_time = current_time;
+setup :: proc(){
+	deep.demo_setup()
+	deep.set_camera_position({0.0, 0.0, 3.0});
+	deep.mouse_lock(true)
+}
 
+input :: proc(delta_time: f32) -> bool {
 	ev: sdl.Event
 	for sdl.PollEvent(&ev) {
 		#partial switch ev.type {
@@ -48,14 +34,13 @@ processEvents :: proc(camera: ^Camera) -> bool {
 			case .KEY_DOWN:
 				if ev.key.scancode == .ESCAPE do return false
 			case .MOUSE_MOTION:
-				camera_process_mouse_movement(camera, ev.motion.xrel, ev.motion.yrel*-1, true);
+				deep.camera_process_mouse_movement(ev.motion.xrel, ev.motion.yrel*-1, true);
 		}
 	}
 
 	keyboardState := sdl.GetKeyboardState(nil);
 
-    camera_process_keyboard(
-        camera, 
+    deep.camera_process_keyboard(
         keyboardState[sdl.Scancode.W],
         keyboardState[sdl.Scancode.S],
         keyboardState[sdl.Scancode.A],
@@ -66,4 +51,8 @@ processEvents :: proc(camera: ^Camera) -> bool {
     )
 
 	return true
+}
+
+update :: proc() {
+
 }
