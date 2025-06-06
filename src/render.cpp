@@ -119,6 +119,9 @@ namespace deep
         pipelineInfo.target_info.num_color_targets = 1;
         pipelineInfo.target_info.color_target_descriptions = colorTargetDescriptions;
 
+        // Cull Mode
+        pipelineInfo.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_BACK;
+
         // Depth Testing
         pipelineInfo.depth_stencil_state.enable_depth_test = true;
         pipelineInfo.depth_stencil_state.enable_depth_write = true;
@@ -293,28 +296,22 @@ namespace deep
         };
         Uint16 indices[] = {  
             // Front face
-            0, 1, 2,
-            2, 3, 0,
+            0, 1, 2,  2, 3, 0,
 
             // Back face
-            4, 5, 6,
-            6, 7, 4,
+            4, 7, 6,  6, 5, 4,
 
             // Top face
-            8, 9, 10,
-            10, 11, 8,
+            8, 9, 10,  10, 11, 8,
 
             // Bottom face
-            12, 13, 14,
-            14, 15, 12,
+            12, 15, 14,  14, 13, 12,
 
             // Right face
-            16, 17, 18,
-            18, 19, 16,
+            16, 17, 18,  18, 19, 16,
 
             // Left face
-            20, 21, 22,
-            22, 23, 20
+            20, 23, 22,  22, 21, 20,
         };
         Uint16 verticesCount = sizeof(vertices) / sizeof(Vertex);
 
