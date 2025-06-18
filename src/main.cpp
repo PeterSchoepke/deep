@@ -2,10 +2,7 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
-#include "assets.h"
-#include "render.h"
-#include "camera.h"
-#include "data.h"
+#include "engine.h"
 
 double lastFrameTime = 0;
 
@@ -74,7 +71,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
     {
         float xoffset = static_cast<float>(event->motion.xrel);
         float yoffset = static_cast<float>(event->motion.yrel*-1);
-        deep::CameraProcessMouseMovement(camera, xoffset, yoffset);
+        deep::CameraProcessMouseMovement(camera, xoffset, yoffset, true);
     }
 
     return SDL_APP_CONTINUE;
