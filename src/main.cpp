@@ -4,8 +4,6 @@
 #include <glm/glm.hpp>
 #include "engine.h"
 
-double last_frame_time = 0;
-
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     deep::init();
@@ -20,9 +18,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    double current_time = SDL_GetTicks() / 1000.0f;
-    double delta_time = current_time - last_frame_time;
-    last_frame_time = current_time;
+    double delta_time = deep::get_delta_time();
 
     const bool* KEYBOARD_STATE = SDL_GetKeyboardState(NULL);
 

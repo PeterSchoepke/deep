@@ -713,6 +713,15 @@ namespace deepcore
             destroy_render_pipeline();
             destroy_window();
         }
+
+        double last_frame_time = 0;
+        double get_delta_time() 
+        { 
+            double current_time = SDL_GetTicks() / 1000.0f;
+            double delta_time = current_time - last_frame_time;
+            last_frame_time = current_time;
+            return delta_time;
+        }
     
         void load_meshes()
         {
@@ -766,6 +775,8 @@ namespace deep
     void init() { deepcore::init(); }
     void cleanup(){ deepcore::cleanup(); }
     void render(){ deepcore::render(); }
+    
+    double get_delta_time() { return deepcore::get_delta_time(); }
 
     void camera_init(glm::vec3 position) { deepcore::camera_init(position); }
     void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) {
