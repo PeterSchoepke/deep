@@ -6,19 +6,14 @@
 
 double last_frame_time = 0;
 
-deep::Render_Context render_context{};
-deep::Meshes meshes{};
-deep::Lights lights{};
-deep::Camera camera{};
-
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
-    deep::init(render_context);
+    deep::init();
 
-    deep::camera_init(camera, glm::vec3(0.0f, 0.0f, 3.0f));
-    SDL_SetWindowRelativeMouseMode(render_context.window, true);
-    deep::load_meshes(render_context, meshes);
-    deep::load_lights(lights);
+    deep::camera_init(glm::vec3(0.0f, 0.0f, 3.0f));
+    //SDL_SetWindowRelativeMouseMode(render_context.window, true);
+    deep::load_meshes();
+    deep::load_lights();
 
     return SDL_APP_CONTINUE;
 }
@@ -32,7 +27,6 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     const bool* KEYBOARD_STATE = SDL_GetKeyboardState(NULL);
 
     deep::camera_process_keyboard(
-        camera, 
         KEYBOARD_STATE[SDL_SCANCODE_W],
         KEYBOARD_STATE[SDL_SCANCODE_S],
         KEYBOARD_STATE[SDL_SCANCODE_A],
@@ -42,7 +36,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         delta_time
     );
 
-    deep::render(render_context, camera, meshes, lights);
+    deep::render();
     return SDL_APP_CONTINUE;
 }
 
@@ -68,7 +62,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
     {
         float x_offset = static_cast<float>(event->motion.xrel);
         float y_offset = static_cast<float>(event->motion.yrel*-1);
-        deep::camera_process_mouse_movement(camera, x_offset, y_offset, true);
+        deep::camera_process_mouse_movement(x_offset, y_offset, true);
     }
 
     return SDL_APP_CONTINUE;
@@ -76,5 +70,5 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
-    deep::cleanup(render_context, meshes);
+    deep::cleanup();
 }

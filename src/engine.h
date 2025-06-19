@@ -5,7 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-namespace deep
+namespace deepcore
 {
     #pragma region Data
 
@@ -94,8 +94,14 @@ namespace deep
             glm::vec3 data[10];
             int count = 0;
         };
-
     #pragma endregion Data
+
+    #pragma region Globals
+        Render_Context render_context{};
+        Meshes meshes{};
+        Lights lights{};
+        Camera camera{};
+    #pragma endregion Globals
 
     #pragma region Assets
         SDL_Surface* load_image(const char* image_filename, int desired_channels)
@@ -135,7 +141,7 @@ namespace deep
     #pragma endregion Assets
 
     #pragma region Camera
-        void camera_update_vectors(Camera& camera)
+        void camera_update_vectors()
         {
             glm::vec3 front;
             front.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
@@ -147,13 +153,13 @@ namespace deep
             camera.up    = glm::normalize(glm::cross(camera.right, camera.front));
         }
 
-        void camera_init(Camera& camera, glm::vec3 position)
+        void camera_init(glm::vec3 position)
         {
             camera.position = position;
             camera.world_up = glm::vec3(0.0f, 1.0f, 0.0f);
             camera.yaw = -90.0f;
             camera.pitch = 0.0f;
-            camera_update_vectors(camera);
+            camera_update_vectors();
 
             camera.movement_speed = 2.5f;
             camera.mouse_sensitivity = 0.1f;
@@ -161,12 +167,12 @@ namespace deep
             camera.projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
         }
 
-        glm::mat4 camera_get_view_matrix(Camera& camera)
+        glm::mat4 camera_get_view_matrix()
         {
             return glm::lookAt(camera.position, camera.position + camera.front, camera.up);
         }
 
-        void camera_process_keyboard(Camera& camera, bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time)
+        void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time)
         {
             if(forward || back || left || right || up || down)
             {
@@ -189,7 +195,7 @@ namespace deep
             }
         }
 
-        void camera_process_mouse_movement(Camera& camera, float x_offset, float y_offset, bool constrain_pitch)
+        void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch)
         {
             x_offset *= camera.mouse_sensitivity;
             y_offset *= camera.mouse_sensitivity;
@@ -205,14 +211,14 @@ namespace deep
                     camera.pitch = -89.0f;
             }
 
-            camera_update_vectors(camera);
+            camera_update_vectors();
         }
 
         
     #pragma endregion Camera
 
     #pragma region Renderer
-        void create_window(Render_Context& render_context)
+        void create_window()
         {
             // create a window
             render_context.window = SDL_CreateWindow("Deep", 640, 480, SDL_WINDOW_RESIZABLE);
@@ -221,7 +227,7 @@ namespace deep
             render_context.device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
             SDL_ClaimWindowForGPUDevice(render_context.device, render_context.window);
         }
-        void destroy_window(Render_Context& render_context)
+        void destroy_window()
         {
             // destroy the GPU device
             SDL_DestroyGPUDevice(render_context.device);
@@ -230,7 +236,7 @@ namespace deep
             SDL_DestroyWindow(render_context.window);
         }
 
-        void create_render_pipeline(Render_Context& render_context)
+        void create_render_pipeline()
         {
         // load the vertex shader code
             size_t vertex_code_size; 
@@ -346,13 +352,13 @@ namespace deep
             SDL_ReleaseGPUShader(render_context.device, vertex_shader);
             SDL_ReleaseGPUShader(render_context.device, fragment_shader);
         }
-        void destroy_render_pipeline(Render_Context& render_context)
+        void destroy_render_pipeline()
         {
             // release the pipeline
             SDL_ReleaseGPUGraphicsPipeline(render_context.device, render_context.graphics_pipeline);        
         }
 
-        void create_depth_buffer(Render_Context& render_context)
+        void create_depth_buffer()
         {
             int scene_width, scene_height;
             SDL_GetWindowSizeInPixels(render_context.window, &scene_width, &scene_height);
@@ -368,12 +374,12 @@ namespace deep
             texture_create_info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
             render_context.scene_depth_texture = SDL_CreateGPUTexture(render_context.device, &texture_create_info);
         }
-        void destroy_depth_buffer(Render_Context& render_context)
+        void destroy_depth_buffer()
         {
             SDL_ReleaseGPUTexture(render_context.device, render_context.scene_depth_texture);
         }
 
-        SDL_GPUTexture* load_texture(Render_Context& render_context, const char *filename)
+        SDL_GPUTexture* load_texture(const char *filename)
         {
             SDL_Surface *image_data = load_image(filename, 4);
                 if (image_data == NULL)
@@ -443,13 +449,13 @@ namespace deep
 
             return texture;
         }
-        void load_textures(Render_Context& render_context)
+        void load_textures()
         {
-            render_context.diffuse_map = load_texture(render_context, "diffuse.bmp");
-            render_context.specular_map = load_texture(render_context, "specular.bmp");
-            render_context.shininess_map = load_texture(render_context, "shininess.bmp");
+            render_context.diffuse_map = load_texture("diffuse.bmp");
+            render_context.specular_map = load_texture("specular.bmp");
+            render_context.shininess_map = load_texture("shininess.bmp");
         }
-        void destroy_textures(Render_Context& render_context)
+        void destroy_textures()
         {
             // release the texture and sampler
             SDL_ReleaseGPUTexture(render_context.device, render_context.diffuse_map);
@@ -458,7 +464,7 @@ namespace deep
             SDL_ReleaseGPUSampler(render_context.device, render_context.sampler);
         }
 
-        void create_render_data(Render_Context& render_context, Render_Data& render_data)
+        void create_render_data(Render_Data& render_data)
         {
             Vertex vertices[]
             {
@@ -583,13 +589,13 @@ namespace deep
             render_data.transform = glm::mat4(1.0f);
             render_data.transform = glm::rotate(render_data.transform, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         }
-        void destroy_render_data(Render_Context& render_context, Render_Data& render_data){
+        void destroy_render_data(Render_Data& render_data){
             // release buffers
             SDL_ReleaseGPUBuffer(render_context.device, render_data.vertex_buffer);
             SDL_ReleaseGPUBuffer(render_context.device, render_data.index_buffer);
         }
 
-        void render(Render_Context& render_context, Camera& camera, Meshes& meshes, Lights& lights)
+        void render()
         {
             // acquire the command buffer
             SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device);
@@ -631,7 +637,7 @@ namespace deep
                 SDL_BindGPUGraphicsPipeline(render_pass, render_context.graphics_pipeline);
 
                 Vertex_Uniform_Buffer vertex_uniform_buffer{};
-                vertex_uniform_buffer.view = camera_get_view_matrix(camera);
+                vertex_uniform_buffer.view = camera_get_view_matrix();
                 vertex_uniform_buffer.projection = camera.projection;
 
                 Fragment_Uniform_Buffer fragment_uniform_buffer{};
@@ -685,30 +691,30 @@ namespace deep
     #pragma endregion Renderer
 
     #pragma region Game
-        void destroy_meshes(Render_Context& render_context, Meshes& meshes)
+        void destroy_meshes()
         {
             for (int i = 0; i < meshes.count; ++i) {
-                destroy_render_data(render_context, meshes.data[i]);
+                destroy_render_data(meshes.data[i]);
             }
         }
 
-        void init(Render_Context& render_context)
+        void init()
         {
-            create_window(render_context);
-            create_render_pipeline(render_context);
-            create_depth_buffer(render_context);
-            load_textures(render_context);
+            create_window();
+            create_render_pipeline();
+            create_depth_buffer();
+            load_textures();
         }
-        void cleanup(Render_Context& render_context, Meshes& meshes)
+        void cleanup()
         {
-            destroy_meshes(render_context, meshes);
-            destroy_textures(render_context);
-            destroy_depth_buffer(render_context);
-            destroy_render_pipeline(render_context);
-            destroy_window(render_context);
+            destroy_meshes();
+            destroy_textures();
+            destroy_depth_buffer();
+            destroy_render_pipeline();
+            destroy_window();
         }
     
-        void load_meshes(Render_Context& render_context, Meshes& meshes)
+        void load_meshes()
         {
             glm::vec3 cube_positions[] = {
                 glm::vec3( 0.0f,  0.0f,  0.0f), 
@@ -725,7 +731,7 @@ namespace deep
 
             for(unsigned int i = 0; i < 10; i++)
             {
-                create_render_data(render_context, meshes.data[i]);
+                create_render_data(meshes.data[i]);
 
                 meshes.data[i].transform = glm::mat4(1.0f);
                 meshes.data[i].transform = glm::translate(meshes.data[i].transform, cube_positions[i]);
@@ -736,7 +742,7 @@ namespace deep
             meshes.count = 10;
         }
         
-        void load_lights(Lights& lights)
+        void load_lights()
         {
             glm::vec3 light_positions[] = {
                 glm::vec3( 0.7f,  0.2f,  2.0f),
@@ -752,4 +758,24 @@ namespace deep
         }
         
         #pragma endregion Game
-} 
+}
+
+namespace deep
+{
+    #pragma region Interface
+    void init() { deepcore::init(); }
+    void cleanup(){ deepcore::cleanup(); }
+    void render(){ deepcore::render(); }
+
+    void camera_init(glm::vec3 position) { deepcore::camera_init(position); }
+    void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) {
+        deepcore::camera_process_keyboard(forward, back, left, right, up, down, delta_time);
+    }
+    void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch) {
+        deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch);
+    }
+
+    void load_meshes() { deepcore::load_meshes(); }
+    void load_lights() { deepcore::load_lights(); }
+    #pragma endregion Interface
+}
