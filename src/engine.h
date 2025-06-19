@@ -104,7 +104,7 @@ namespace deep
             SDL_Surface *result;
             SDL_PixelFormat format;
 
-            SDL_snprintf(full_path, sizeof(full_path), "ressources/%s", image_filename);
+            SDL_snprintf(full_path, sizeof(full_path), "ressources/images/%s", image_filename);
 
             result = SDL_LoadBMP(full_path);
             if (result == NULL)
