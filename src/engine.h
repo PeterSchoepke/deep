@@ -92,6 +92,7 @@ namespace deepcore
         struct Lights
         {
             glm::vec3 data[10];
+            int max_count = 10;
             int count = 0;
         };
     #pragma endregion Data
@@ -756,22 +757,18 @@ namespace deepcore
                 meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             }
             meshes.data[9].transform = glm::scale(meshes.data[9].transform, glm::vec3(0.1f));
-            meshes.count = 10;
+            meshes.count = 1;
         }
-        
-        void load_lights()
+
+        int add_light(glm::vec3 position)
         {
-            glm::vec3 light_positions[] = {
-                glm::vec3( 0.7f,  0.2f,  2.0f),
-                glm::vec3( 2.3f, -3.3f, -4.0f),
-                glm::vec3(-4.0f,  2.0f, -12.0f),
-                glm::vec3( 0.0f,  0.0f, -3.0f)
-            };  
-            for(unsigned int i = 0; i < 4; i++)
+            if(lights.count < lights.max_count)
             {
-                lights.data[i] = light_positions[i];
+                lights.data[lights.count] = position;
+                lights.count += 1;
+                return lights.count-1;
             }
-            lights.count = 4;
+            return -1;
         }
         
         #pragma endregion Game
@@ -795,7 +792,8 @@ namespace deep
         deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch);
     }
 
+    int add_light(glm::vec3 position) { return deepcore::add_light(position); }
+
     void load_meshes() { deepcore::load_meshes(); }
-    void load_lights() { deepcore::load_lights(); }
     #pragma endregion Interface
 }
