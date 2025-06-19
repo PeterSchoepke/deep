@@ -722,6 +722,8 @@ namespace deepcore
             last_frame_time = current_time;
             return delta_time;
         }
+
+        void mouse_lock(bool lock) { SDL_SetWindowRelativeMouseMode(render_context.window, lock); }
     
         void load_meshes()
         {
@@ -777,6 +779,7 @@ namespace deep
     void render(){ deepcore::render(); }
     
     double get_delta_time() { return deepcore::get_delta_time(); }
+    void mouse_lock(bool lock) { deepcore::mouse_lock(lock); }
 
     void camera_init(glm::vec3 position) { deepcore::camera_init(position); }
     void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) {
