@@ -167,6 +167,11 @@ namespace deepcore
             camera.projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
         }
 
+        void camera_set_position(glm::vec3 position)
+        {
+            camera.position = position;
+        }
+
         glm::mat4 camera_get_view_matrix()
         {
             return glm::lookAt(camera.position, camera.position + camera.front, camera.up);
@@ -704,6 +709,7 @@ namespace deepcore
             create_render_pipeline();
             create_depth_buffer();
             load_textures();
+            camera_init(glm::vec3(0.0f, 0.0f, 0.0f));
         }
         void cleanup()
         {
@@ -781,7 +787,7 @@ namespace deep
     double get_delta_time() { return deepcore::get_delta_time(); }
     void mouse_lock(bool lock) { deepcore::mouse_lock(lock); }
 
-    void camera_init(glm::vec3 position) { deepcore::camera_init(position); }
+    void set_camera_position(glm::vec3 position) { deepcore::camera_set_position(position); }
     void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) {
         deepcore::camera_process_keyboard(forward, back, left, right, up, down, delta_time);
     }

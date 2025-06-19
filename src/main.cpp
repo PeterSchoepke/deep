@@ -8,7 +8,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     deep::init();
 
-    deep::camera_init(glm::vec3(0.0f, 0.0f, 3.0f));
+    deep::set_camera_position(glm::vec3(0.0f, 0.0f, 3.0f));
     deep::mouse_lock(true);
     deep::load_meshes();
     deep::load_lights();
