@@ -4,38 +4,14 @@
     "args": [],
     "tasks": [
         {
-            "label": "mkdir",
-            "type": "shell",
-            "command": "cmd",
-            "args": [
-                "/C",
-                "if not exist .\\build mkdir .\\build"
-            ]
-        },
-        {
             "label": "build",
             "type": "shell",
-            "command": "odin build ./src -debug -out:build/debug.exe",
-            "group": "build"
-        },
-        {
-            "label": "fshader",
-            "type": "shell",
-            "command": "glslc -fshader-stage=fragment shaders/fragment.glsl -o shaders/fragment.spv",
-            "group": "build"
-        },
-        {
-            "label": "vshader",
-            "type": "shell",
-            "command": "glslc -fshader-stage=vertex shaders/vertex.glsl -o shaders/vertex.spv",
+            "command": "MSBuild build\\src\\deep.vcxproj",
             "group": "build"
         },
         {
             "label": "Build",
             "dependsOn": [
-                "mkdir",
-                //"vshader",
-                //"fshader",
                 "build"                
             ]
         }
