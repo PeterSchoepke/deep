@@ -12,7 +12,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::mouse_lock(true);
 
     deep::add_light(glm::vec3(1.2f, 1.0f, 2.0f));
-    deep::load_meshes();
+    deep::add_mesh(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
     return SDL_APP_CONTINUE;
 }

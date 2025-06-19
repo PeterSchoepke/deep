@@ -86,6 +86,7 @@ namespace deepcore
         struct Meshes
         {
             Render_Data data[10];
+            int max_count = 10;
             int count = 0;
         };
 
@@ -731,34 +732,6 @@ namespace deepcore
         }
 
         void mouse_lock(bool lock) { SDL_SetWindowRelativeMouseMode(render_context.window, lock); }
-    
-        void load_meshes()
-        {
-            glm::vec3 cube_positions[] = {
-                glm::vec3( 0.0f,  0.0f,  0.0f), 
-                glm::vec3( 2.0f,  5.0f, -15.0f), 
-                glm::vec3(-1.5f, -2.2f, -2.5f),  
-                glm::vec3(-3.8f, -2.0f, -12.3f),  
-                glm::vec3( 2.4f, -0.4f, -3.5f),  
-                glm::vec3(-1.7f,  3.0f, -7.5f),  
-                glm::vec3( 1.3f, -2.0f, -2.5f),  
-                glm::vec3( 1.5f,  2.0f, -2.5f), 
-                glm::vec3( 1.5f,  0.2f, -1.5f), 
-                glm::vec3(1.2f, 1.0f, 2.0f)  
-            };
-
-            for(unsigned int i = 0; i < 10; i++)
-            {
-                create_render_data(meshes.data[i]);
-
-                meshes.data[i].transform = glm::mat4(1.0f);
-                meshes.data[i].transform = glm::translate(meshes.data[i].transform, cube_positions[i]);
-                float angle = 20.0f * i; 
-                meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            }
-            meshes.data[9].transform = glm::scale(meshes.data[9].transform, glm::vec3(0.1f));
-            meshes.count = 1;
-        }
 
         int add_light(glm::vec3 position)
         {
@@ -767,6 +740,25 @@ namespace deepcore
                 lights.data[lights.count] = position;
                 lights.count += 1;
                 return lights.count-1;
+            }
+            return -1;
+        }
+
+        int add_mesh(glm::vec3 position, glm::vec3 rotation)
+        {
+            if(meshes.count < meshes.max_count)
+            {
+                int i = meshes.count;
+                create_render_data(meshes.data[i]);
+                
+                meshes.data[i].transform = glm::mat4(1.0f);
+                meshes.data[i].transform = glm::translate(meshes.data[i].transform, position);
+                meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+                meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+                meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+                meshes.count += 1;
+                return meshes.count-1;
             }
             return -1;
         }
@@ -785,15 +777,10 @@ namespace deep
     void mouse_lock(bool lock) { deepcore::mouse_lock(lock); }
 
     void set_camera_position(glm::vec3 position) { deepcore::camera_set_position(position); }
-    void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) {
-        deepcore::camera_process_keyboard(forward, back, left, right, up, down, delta_time);
-    }
-    void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch) {
-        deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch);
-    }
+    void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) { deepcore::camera_process_keyboard(forward, back, left, right, up, down, delta_time); }
+    void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch) { deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch); }
 
     int add_light(glm::vec3 position) { return deepcore::add_light(position); }
-
-    void load_meshes() { deepcore::load_meshes(); }
+    int add_mesh(glm::vec3 position, glm::vec3 rotation) { return deepcore::add_mesh(position, rotation); }
     #pragma endregion Interface
 }
