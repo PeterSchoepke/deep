@@ -9,23 +9,23 @@ namespace deep
 {
     #pragma region Data
 
-        struct RenderContext
+        struct Render_Context
         {
             SDL_Window* window;
             SDL_GPUDevice* device;
-            SDL_GPUGraphicsPipeline* graphicsPipeline;
+            SDL_GPUGraphicsPipeline* graphics_pipeline;
 
-            SDL_GPUTexture* diffuseMap;
-            SDL_GPUTexture* specularMap;
-            SDL_GPUTexture* shininessMap;
+            SDL_GPUTexture* diffuse_map;
+            SDL_GPUTexture* specular_map;
+            SDL_GPUTexture* shininess_map;
             SDL_GPUSampler* sampler;
-            SDL_GPUTexture* sceneDepthTexture;
+            SDL_GPUTexture* scene_depth_texture;
         };
 
-        struct RenderData
+        struct Render_Data
         {
-            SDL_GPUBuffer* vertexBuffer;
-            SDL_GPUBuffer* indexBuffer;
+            SDL_GPUBuffer* vertex_buffer;
+            SDL_GPUBuffer* index_buffer;
             glm::mat4 transform;
         };
 
@@ -36,7 +36,7 @@ namespace deep
             float nx, ny, nz;   //vec3 normals
         };
 
-        struct VertexUniformBuffer
+        struct Vertex_Uniform_Buffer
         {
             glm::mat4 model;
             glm::mat4 view;
@@ -54,16 +54,16 @@ namespace deep
             glm::vec3 specular;
             float padding4;
 
-            glm::vec3 constantLinearQuadratic;
+            glm::vec3 constant_linear_quadratic;
             float padding5;
         };
 
-        struct FragmentUniformBuffer
+        struct Fragment_Uniform_Buffer
         {
-            glm::vec3 cameraPosition;
+            glm::vec3 camera_position;
             float padding1;
             Light lights[10];
-            int numberOfLights;
+            int number_of_lights;
         };
 
         struct Camera
@@ -72,20 +72,20 @@ namespace deep
             glm::vec3 front;
             glm::vec3 up;
             glm::vec3 right;
-            glm::vec3 worldUp;
+            glm::vec3 world_up;
             
             float yaw;
             float pitch;
             
-            float movementSpeed;
-            float mouseSensitivity;
+            float movement_speed;
+            float mouse_sensitivity;
             
             glm::mat4 projection;
         };
 
         struct Meshes
         {
-            RenderData data[10];
+            Render_Data data[10];
             int count = 0;
         };
 
@@ -98,28 +98,28 @@ namespace deep
     #pragma endregion Data
 
     #pragma region Assets
-        SDL_Surface* Load_Image(const char* imageFilename, int desiredChannels)
+        SDL_Surface* load_image(const char* image_filename, int desired_channels)
         {
-            char fullPath[256];
+            char full_path[256];
             SDL_Surface *result;
             SDL_PixelFormat format;
 
-            SDL_snprintf(fullPath, sizeof(fullPath), "ressources/%s", imageFilename);
+            SDL_snprintf(full_path, sizeof(full_path), "ressources/%s", image_filename);
 
-            result = SDL_LoadBMP(fullPath);
+            result = SDL_LoadBMP(full_path);
             if (result == NULL)
             {
                 SDL_Log("Failed to load BMP: %s", SDL_GetError());
                 return NULL;
             }
 
-            if (desiredChannels == 4)
+            if (desired_channels == 4)
             {
                 format = SDL_PIXELFORMAT_ABGR8888;
             }
             else
             {
-                SDL_assert(!"Unexpected desiredChannels");
+                SDL_assert(!"Unexpected desired_channels");
                 SDL_DestroySurface(result);
                 return NULL;
             }
@@ -135,7 +135,7 @@ namespace deep
     #pragma endregion Assets
 
     #pragma region Camera
-        void CameraUpdateVectors(Camera& camera)
+        void camera_update_vectors(Camera& camera)
         {
             glm::vec3 front;
             front.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
@@ -143,30 +143,30 @@ namespace deep
             front.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
             camera.front = glm::normalize(front);
             
-            camera.right = glm::normalize(glm::cross(camera.front, camera.worldUp));
+            camera.right = glm::normalize(glm::cross(camera.front, camera.world_up));
             camera.up    = glm::normalize(glm::cross(camera.right, camera.front));
         }
 
-        void CameraInit(Camera& camera, glm::vec3 position)
+        void camera_init(Camera& camera, glm::vec3 position)
         {
             camera.position = position;
-            camera.worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+            camera.world_up = glm::vec3(0.0f, 1.0f, 0.0f);
             camera.yaw = -90.0f;
             camera.pitch = 0.0f;
-            CameraUpdateVectors(camera);
+            camera_update_vectors(camera);
 
-            camera.movementSpeed = 2.5f;
-            camera.mouseSensitivity = 0.1f;
+            camera.movement_speed = 2.5f;
+            camera.mouse_sensitivity = 0.1f;
 
             camera.projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
         }
 
-        glm::mat4 CameraGetViewMatrix(Camera& camera)
+        glm::mat4 camera_get_view_matrix(Camera& camera)
         {
             return glm::lookAt(camera.position, camera.position + camera.front, camera.up);
         }
 
-        void CameraProcessKeyboard(Camera& camera, bool forward, bool back, bool left, bool right, bool up, bool down, float deltaTime)
+        void camera_process_keyboard(Camera& camera, bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time)
         {
             if(forward || back || left || right || up || down)
             {
@@ -184,20 +184,20 @@ namespace deep
                 if(up) { movement.y += 1.0f; }
                 if(down) { movement.y -= 1.0f; }
 
-                float velocity = camera.movementSpeed * deltaTime;
+                float velocity = camera.movement_speed * delta_time;
                 camera.position += movement * velocity;
             }
         }
 
-        void CameraProcessMouseMovement(Camera& camera, float xoffset, float yoffset, bool constrainPitch)
+        void camera_process_mouse_movement(Camera& camera, float x_offset, float y_offset, bool constrain_pitch)
         {
-            xoffset *= camera.mouseSensitivity;
-            yoffset *= camera.mouseSensitivity;
+            x_offset *= camera.mouse_sensitivity;
+            y_offset *= camera.mouse_sensitivity;
 
-            camera.yaw   += xoffset;
-            camera.pitch += yoffset;
+            camera.yaw   += x_offset;
+            camera.pitch += y_offset;
 
-            if (constrainPitch)
+            if (constrain_pitch)
             {
                 if (camera.pitch > 89.0f)
                     camera.pitch = 89.0f;
@@ -205,260 +205,260 @@ namespace deep
                     camera.pitch = -89.0f;
             }
 
-            CameraUpdateVectors(camera);
+            camera_update_vectors(camera);
         }
 
         
     #pragma endregion Camera
 
     #pragma region Renderer
-        void Create_Window(RenderContext& renderContext)
+        void create_window(Render_Context& render_context)
         {
             // create a window
-            renderContext.window = SDL_CreateWindow("Deep", 640, 480, SDL_WINDOW_RESIZABLE);
+            render_context.window = SDL_CreateWindow("Deep", 640, 480, SDL_WINDOW_RESIZABLE);
             
             // create the device
-            renderContext.device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
-            SDL_ClaimWindowForGPUDevice(renderContext.device, renderContext.window);
+            render_context.device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
+            SDL_ClaimWindowForGPUDevice(render_context.device, render_context.window);
         }
-        void Destroy_Window(RenderContext& renderContext)
+        void destroy_window(Render_Context& render_context)
         {
             // destroy the GPU device
-            SDL_DestroyGPUDevice(renderContext.device);
+            SDL_DestroyGPUDevice(render_context.device);
 
             // destroy the window
-            SDL_DestroyWindow(renderContext.window);
+            SDL_DestroyWindow(render_context.window);
         }
 
-        void Create_Render_Pipeline(RenderContext& renderContext)
+        void create_render_pipeline(Render_Context& render_context)
         {
         // load the vertex shader code
-            size_t vertexCodeSize; 
-            void* vertexCode = SDL_LoadFile("shaders/vertex.spv", &vertexCodeSize);
+            size_t vertex_code_size; 
+            void* vertex_code = SDL_LoadFile("shaders/vertex.spv", &vertex_code_size);
 
             // create the vertex shader
-            SDL_GPUShaderCreateInfo vertexInfo{};
-            vertexInfo.code = (Uint8*)vertexCode;
-            vertexInfo.code_size = vertexCodeSize;
-            vertexInfo.entrypoint = "main";
-            vertexInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
-            vertexInfo.stage = SDL_GPU_SHADERSTAGE_VERTEX;
-            vertexInfo.num_samplers = 0;
-            vertexInfo.num_storage_buffers = 0;
-            vertexInfo.num_storage_textures = 0;
-            vertexInfo.num_uniform_buffers = 1;
+            SDL_GPUShaderCreateInfo vertex_info{};
+            vertex_info.code = (Uint8*)vertex_code;
+            vertex_info.code_size = vertex_code_size;
+            vertex_info.entrypoint = "main";
+            vertex_info.format = SDL_GPU_SHADERFORMAT_SPIRV;
+            vertex_info.stage = SDL_GPU_SHADERSTAGE_VERTEX;
+            vertex_info.num_samplers = 0;
+            vertex_info.num_storage_buffers = 0;
+            vertex_info.num_storage_textures = 0;
+            vertex_info.num_uniform_buffers = 1;
 
-            SDL_GPUShader* vertexShader = SDL_CreateGPUShader(renderContext.device, &vertexInfo);
+            SDL_GPUShader* vertex_shader = SDL_CreateGPUShader(render_context.device, &vertex_info);
 
             // free the file
-            SDL_free(vertexCode);
+            SDL_free(vertex_code);
 
             // load the fragment shader code
-            size_t fragmentCodeSize; 
-            void* fragmentCode = SDL_LoadFile("shaders/fragment.spv", &fragmentCodeSize);
+            size_t fragment_code_size; 
+            void* fragment_code = SDL_LoadFile("shaders/fragment.spv", &fragment_code_size);
 
             // create the fragment shader
-            SDL_GPUShaderCreateInfo fragmentInfo{};
-            fragmentInfo.code = (Uint8*)fragmentCode;
-            fragmentInfo.code_size = fragmentCodeSize;
-            fragmentInfo.entrypoint = "main";
-            fragmentInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
-            fragmentInfo.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-            fragmentInfo.num_samplers = 3;
-            fragmentInfo.num_storage_buffers = 0;
-            fragmentInfo.num_storage_textures = 0;
-            fragmentInfo.num_uniform_buffers = 1;
+            SDL_GPUShaderCreateInfo fragment_info{};
+            fragment_info.code = (Uint8*)fragment_code;
+            fragment_info.code_size = fragment_code_size;
+            fragment_info.entrypoint = "main";
+            fragment_info.format = SDL_GPU_SHADERFORMAT_SPIRV;
+            fragment_info.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
+            fragment_info.num_samplers = 3;
+            fragment_info.num_storage_buffers = 0;
+            fragment_info.num_storage_textures = 0;
+            fragment_info.num_uniform_buffers = 1;
 
-            SDL_GPUShader* fragmentShader = SDL_CreateGPUShader(renderContext.device, &fragmentInfo);
+            SDL_GPUShader* fragment_shader = SDL_CreateGPUShader(render_context.device, &fragment_info);
 
             // free the file
-            SDL_free(fragmentCode);
+            SDL_free(fragment_code);
 
             // create the graphics pipeline
-            SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{};
-            pipelineInfo.vertex_shader = vertexShader;
-            pipelineInfo.fragment_shader = fragmentShader;
-            pipelineInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+            SDL_GPUGraphicsPipelineCreateInfo pipeline_info{};
+            pipeline_info.vertex_shader = vertex_shader;
+            pipeline_info.fragment_shader = fragment_shader;
+            pipeline_info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
 
             // describe the vertex buffers
-            SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1];
-            vertexBufferDesctiptions[0].slot = 0;
-            vertexBufferDesctiptions[0].input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
-            vertexBufferDesctiptions[0].instance_step_rate = 0;
-            vertexBufferDesctiptions[0].pitch = sizeof(Vertex);
+            SDL_GPUVertexBufferDescription vertex_buffer_description[1];
+            vertex_buffer_description[0].slot = 0;
+            vertex_buffer_description[0].input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
+            vertex_buffer_description[0].instance_step_rate = 0;
+            vertex_buffer_description[0].pitch = sizeof(Vertex);
 
-            pipelineInfo.vertex_input_state.num_vertex_buffers = 1;
-            pipelineInfo.vertex_input_state.vertex_buffer_descriptions = vertexBufferDesctiptions;
+            pipeline_info.vertex_input_state.num_vertex_buffers = 1;
+            pipeline_info.vertex_input_state.vertex_buffer_descriptions = vertex_buffer_description;
 
             // describe the vertex attribute
-            SDL_GPUVertexAttribute vertexAttributes[3];
+            SDL_GPUVertexAttribute vertex_attributes[3];
 
             // a_position
-            vertexAttributes[0].buffer_slot = 0;
-            vertexAttributes[0].location = 0;
-            vertexAttributes[0].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-            vertexAttributes[0].offset = 0;
+            vertex_attributes[0].buffer_slot = 0;
+            vertex_attributes[0].location = 0;
+            vertex_attributes[0].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
+            vertex_attributes[0].offset = 0;
 
             // a_texcoord
-            vertexAttributes[1].buffer_slot = 0;
-            vertexAttributes[1].location = 1;
-            vertexAttributes[1].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2;
-            vertexAttributes[1].offset = sizeof(float) * 3;
+            vertex_attributes[1].buffer_slot = 0;
+            vertex_attributes[1].location = 1;
+            vertex_attributes[1].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2;
+            vertex_attributes[1].offset = sizeof(float) * 3;
 
             // a_normal
-            vertexAttributes[2].buffer_slot = 0;
-            vertexAttributes[2].location = 2;
-            vertexAttributes[2].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-            vertexAttributes[2].offset = sizeof(float) * 5;
+            vertex_attributes[2].buffer_slot = 0;
+            vertex_attributes[2].location = 2;
+            vertex_attributes[2].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
+            vertex_attributes[2].offset = sizeof(float) * 5;
 
-            pipelineInfo.vertex_input_state.num_vertex_attributes = 3;
-            pipelineInfo.vertex_input_state.vertex_attributes = vertexAttributes;
+            pipeline_info.vertex_input_state.num_vertex_attributes = 3;
+            pipeline_info.vertex_input_state.vertex_attributes = vertex_attributes;
 
             // describe the color target
-            SDL_GPUColorTargetDescription colorTargetDescriptions[1];
-            colorTargetDescriptions[0] = {};
-            colorTargetDescriptions[0].blend_state.enable_blend = true;
-            colorTargetDescriptions[0].blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
-            colorTargetDescriptions[0].blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
-            colorTargetDescriptions[0].blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-            colorTargetDescriptions[0].blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-            colorTargetDescriptions[0].blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-            colorTargetDescriptions[0].blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-            colorTargetDescriptions[0].format = SDL_GetGPUSwapchainTextureFormat(renderContext.device, renderContext.window);
+            SDL_GPUColorTargetDescription color_target_description[1];
+            color_target_description[0] = {};
+            color_target_description[0].blend_state.enable_blend = true;
+            color_target_description[0].blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
+            color_target_description[0].blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
+            color_target_description[0].blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
+            color_target_description[0].blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+            color_target_description[0].blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
+            color_target_description[0].blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+            color_target_description[0].format = SDL_GetGPUSwapchainTextureFormat(render_context.device, render_context.window);
 
-            pipelineInfo.target_info.num_color_targets = 1;
-            pipelineInfo.target_info.color_target_descriptions = colorTargetDescriptions;
+            pipeline_info.target_info.num_color_targets = 1;
+            pipeline_info.target_info.color_target_descriptions = color_target_description;
 
             // Cull Mode
-            pipelineInfo.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_BACK;
+            pipeline_info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_BACK;
 
             // Depth Testing
-            pipelineInfo.depth_stencil_state.enable_depth_test = true;
-            pipelineInfo.depth_stencil_state.enable_depth_write = true;
-            pipelineInfo.depth_stencil_state.compare_op = SDL_GPUCompareOp::SDL_GPU_COMPAREOP_LESS;
-            pipelineInfo.target_info.has_depth_stencil_target = true;
-            pipelineInfo.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+            pipeline_info.depth_stencil_state.enable_depth_test = true;
+            pipeline_info.depth_stencil_state.enable_depth_write = true;
+            pipeline_info.depth_stencil_state.compare_op = SDL_GPUCompareOp::SDL_GPU_COMPAREOP_LESS;
+            pipeline_info.target_info.has_depth_stencil_target = true;
+            pipeline_info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
 
             // create the pipeline
-            renderContext.graphicsPipeline = SDL_CreateGPUGraphicsPipeline(renderContext.device, &pipelineInfo);
+            render_context.graphics_pipeline = SDL_CreateGPUGraphicsPipeline(render_context.device, &pipeline_info);
 
             // we don't need to store the shaders after creating the pipeline
-            SDL_ReleaseGPUShader(renderContext.device, vertexShader);
-            SDL_ReleaseGPUShader(renderContext.device, fragmentShader);
+            SDL_ReleaseGPUShader(render_context.device, vertex_shader);
+            SDL_ReleaseGPUShader(render_context.device, fragment_shader);
         }
-        void Destroy_Render_Pipeline(RenderContext& renderContext)
+        void destroy_render_pipeline(Render_Context& render_context)
         {
             // release the pipeline
-            SDL_ReleaseGPUGraphicsPipeline(renderContext.device, renderContext.graphicsPipeline);        
+            SDL_ReleaseGPUGraphicsPipeline(render_context.device, render_context.graphics_pipeline);        
         }
 
-        void Create_Depth_Buffer(RenderContext& renderContext)
+        void create_depth_buffer(Render_Context& render_context)
         {
-            int sceneWidth, sceneHeight;
-            SDL_GetWindowSizeInPixels(renderContext.window, &sceneWidth, &sceneHeight);
+            int scene_width, scene_height;
+            SDL_GetWindowSizeInPixels(render_context.window, &scene_width, &scene_height);
 
-            SDL_GPUTextureCreateInfo textureCreateInfo{};
-            textureCreateInfo.type = SDL_GPU_TEXTURETYPE_2D;
-            textureCreateInfo.width = sceneWidth;
-            textureCreateInfo.height = sceneHeight;
-            textureCreateInfo.layer_count_or_depth = 1;
-            textureCreateInfo.num_levels = 1;
-            textureCreateInfo.sample_count = SDL_GPU_SAMPLECOUNT_1;
-            textureCreateInfo.format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
-            textureCreateInfo.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
-            renderContext.sceneDepthTexture = SDL_CreateGPUTexture(renderContext.device, &textureCreateInfo);
+            SDL_GPUTextureCreateInfo texture_create_info{};
+            texture_create_info.type = SDL_GPU_TEXTURETYPE_2D;
+            texture_create_info.width = scene_width;
+            texture_create_info.height = scene_height;
+            texture_create_info.layer_count_or_depth = 1;
+            texture_create_info.num_levels = 1;
+            texture_create_info.sample_count = SDL_GPU_SAMPLECOUNT_1;
+            texture_create_info.format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+            texture_create_info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+            render_context.scene_depth_texture = SDL_CreateGPUTexture(render_context.device, &texture_create_info);
         }
-        void Destroy_Depth_Buffer(RenderContext& renderContext)
+        void destroy_depth_buffer(Render_Context& render_context)
         {
-            SDL_ReleaseGPUTexture(renderContext.device, renderContext.sceneDepthTexture);
+            SDL_ReleaseGPUTexture(render_context.device, render_context.scene_depth_texture);
         }
 
-        SDL_GPUTexture* Load_Texture(RenderContext& renderContext, const char *filename)
+        SDL_GPUTexture* load_texture(Render_Context& render_context, const char *filename)
         {
-            SDL_Surface *imageData = Load_Image(filename, 4);
-                if (imageData == NULL)
+            SDL_Surface *image_data = load_image(filename, 4);
+                if (image_data == NULL)
                 {
                     SDL_Log("Could not load image data!");
                     // FIXME handle image not found
                 }
 
-            SDL_GPUSamplerCreateInfo samplerCreateInfo{};
-            samplerCreateInfo.min_filter = SDL_GPU_FILTER_NEAREST;
-            samplerCreateInfo.mag_filter = SDL_GPU_FILTER_NEAREST;
-            samplerCreateInfo.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
-            samplerCreateInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-            samplerCreateInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-            samplerCreateInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-            renderContext.sampler = SDL_CreateGPUSampler(renderContext.device, &samplerCreateInfo);
+            SDL_GPUSamplerCreateInfo sampler_create_info{};
+            sampler_create_info.min_filter = SDL_GPU_FILTER_NEAREST;
+            sampler_create_info.mag_filter = SDL_GPU_FILTER_NEAREST;
+            sampler_create_info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
+            sampler_create_info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+            sampler_create_info.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+            sampler_create_info.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+            render_context.sampler = SDL_CreateGPUSampler(render_context.device, &sampler_create_info);
 
-            SDL_GPUTextureCreateInfo textureCreateInfo{};
-            textureCreateInfo.type = SDL_GPU_TEXTURETYPE_2D;
-            textureCreateInfo.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-            textureCreateInfo.width = imageData->w;
-            textureCreateInfo.height = imageData->h;
-            textureCreateInfo.layer_count_or_depth = 1;
-            textureCreateInfo.num_levels = 1;
-            textureCreateInfo.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
-            SDL_GPUTexture* texture = SDL_CreateGPUTexture(renderContext.device, &textureCreateInfo);
+            SDL_GPUTextureCreateInfo texture_create_info{};
+            texture_create_info.type = SDL_GPU_TEXTURETYPE_2D;
+            texture_create_info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+            texture_create_info.width = image_data->w;
+            texture_create_info.height = image_data->h;
+            texture_create_info.layer_count_or_depth = 1;
+            texture_create_info.num_levels = 1;
+            texture_create_info.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+            SDL_GPUTexture* texture = SDL_CreateGPUTexture(render_context.device, &texture_create_info);
 
-            SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo{};
-            transferBufferCreateInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-            transferBufferCreateInfo.size = imageData->w * imageData->h * 4;
-            SDL_GPUTransferBuffer* textureTransferBuffer = SDL_CreateGPUTransferBuffer(
-                renderContext.device,
-                &transferBufferCreateInfo
+            SDL_GPUTransferBufferCreateInfo transfer_buffer_create_info{};
+            transfer_buffer_create_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+            transfer_buffer_create_info.size = image_data->w * image_data->h * 4;
+            SDL_GPUTransferBuffer* texture_transfer_buffer = SDL_CreateGPUTransferBuffer(
+                render_context.device,
+                &transfer_buffer_create_info
             );
 
-            auto textureTransferPtr = SDL_MapGPUTransferBuffer(
-                renderContext.device,
-                textureTransferBuffer,
+            auto texture_transfer_pointer = SDL_MapGPUTransferBuffer(
+                render_context.device,
+                texture_transfer_buffer,
                 false
             );
-            SDL_memcpy(textureTransferPtr, imageData->pixels, imageData->w * imageData->h * 4);
-            SDL_UnmapGPUTransferBuffer(renderContext.device, textureTransferBuffer);
+            SDL_memcpy(texture_transfer_pointer, image_data->pixels, image_data->w * image_data->h * 4);
+            SDL_UnmapGPUTransferBuffer(render_context.device, texture_transfer_buffer);
 
             // start a copy pass
-            SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
-            SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
+            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device);
+            SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
 
-            SDL_GPUTextureTransferInfo textureTransferInfo{};
-            textureTransferInfo.transfer_buffer = textureTransferBuffer;
-            textureTransferInfo.offset = 0; /* Zeros out the rest */
-            SDL_GPUTextureRegion textureRegion{};
-            textureRegion.texture = texture;
-            textureRegion.w = imageData->w;
-            textureRegion.h = imageData->h;
-            textureRegion.d = 1;
+            SDL_GPUTextureTransferInfo texture_transfer_info{};
+            texture_transfer_info.transfer_buffer = texture_transfer_buffer;
+            texture_transfer_info.offset = 0; /* Zeros out the rest */
+            SDL_GPUTextureRegion texture_region{};
+            texture_region.texture = texture;
+            texture_region.w = image_data->w;
+            texture_region.h = image_data->h;
+            texture_region.d = 1;
             SDL_UploadToGPUTexture(
-                copyPass,
-                &textureTransferInfo,
-                &textureRegion,
+                copy_pass,
+                &texture_transfer_info,
+                &texture_region,
                 false
             );
 
-            SDL_EndGPUCopyPass(copyPass);
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
-            SDL_DestroySurface(imageData);
-            SDL_ReleaseGPUTransferBuffer(renderContext.device, textureTransferBuffer);
+            SDL_EndGPUCopyPass(copy_pass);
+            SDL_SubmitGPUCommandBuffer(command_buffer);
+            SDL_DestroySurface(image_data);
+            SDL_ReleaseGPUTransferBuffer(render_context.device, texture_transfer_buffer);
 
             return texture;
         }
-        void Load_Textures(RenderContext& renderContext)
+        void load_textures(Render_Context& render_context)
         {
-            renderContext.diffuseMap = Load_Texture(renderContext, "diffuse.bmp");
-            renderContext.specularMap = Load_Texture(renderContext, "specular.bmp");
-            renderContext.shininessMap = Load_Texture(renderContext, "shininess.bmp");
+            render_context.diffuse_map = load_texture(render_context, "diffuse.bmp");
+            render_context.specular_map = load_texture(render_context, "specular.bmp");
+            render_context.shininess_map = load_texture(render_context, "shininess.bmp");
         }
-        void Destroy_Textures(RenderContext& renderContext)
+        void destroy_textures(Render_Context& render_context)
         {
             // release the texture and sampler
-            SDL_ReleaseGPUTexture(renderContext.device, renderContext.diffuseMap);
-            SDL_ReleaseGPUTexture(renderContext.device, renderContext.specularMap);
-            SDL_ReleaseGPUTexture(renderContext.device, renderContext.shininessMap);
-            SDL_ReleaseGPUSampler(renderContext.device, renderContext.sampler);
+            SDL_ReleaseGPUTexture(render_context.device, render_context.diffuse_map);
+            SDL_ReleaseGPUTexture(render_context.device, render_context.specular_map);
+            SDL_ReleaseGPUTexture(render_context.device, render_context.shininess_map);
+            SDL_ReleaseGPUSampler(render_context.device, render_context.sampler);
         }
 
-        void Create_Render_Data(RenderContext& renderContext, RenderData& renderData)
+        void create_render_data(Render_Context& render_context, Render_Data& render_data)
         {
             Vertex vertices[]
             {
@@ -523,171 +523,194 @@ namespace deep
                 // Left face
                 20, 23, 22,  22, 21, 20,
             };
-            Uint16 verticesCount = sizeof(vertices) / sizeof(Vertex);
+            Uint16 vertices_count = sizeof(vertices) / sizeof(Vertex);
 
             // create the vertex buffer
-            SDL_GPUBufferCreateInfo vertexBufferInfo{};
-            vertexBufferInfo.size = sizeof(vertices);
-            vertexBufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-            renderData.vertexBuffer = SDL_CreateGPUBuffer(renderContext.device, &vertexBufferInfo);
+            SDL_GPUBufferCreateInfo vertex_buffer_info{};
+            vertex_buffer_info.size = sizeof(vertices);
+            vertex_buffer_info.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
+            render_data.vertex_buffer = SDL_CreateGPUBuffer(render_context.device, &vertex_buffer_info);
 
             // create the index buffer
-            SDL_GPUBufferCreateInfo indexBufferInfo{};
-            indexBufferInfo.size = sizeof(indices);
-            indexBufferInfo.usage = SDL_GPU_BUFFERUSAGE_INDEX;
-            renderData.indexBuffer = SDL_CreateGPUBuffer(renderContext.device, &indexBufferInfo);
+            SDL_GPUBufferCreateInfo index_buffer_info{};
+            index_buffer_info.size = sizeof(indices);
+            index_buffer_info.usage = SDL_GPU_BUFFERUSAGE_INDEX;
+            render_data.index_buffer = SDL_CreateGPUBuffer(render_context.device, &index_buffer_info);
 
             // create a transfer buffer to upload to the vertex buffer
-            SDL_GPUTransferBufferCreateInfo transferInfo{};
-            transferInfo.size = sizeof(vertices) + sizeof(indices);
-            transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-            SDL_GPUTransferBuffer* bufferTransferBuffer = SDL_CreateGPUTransferBuffer(renderContext.device, &transferInfo);
+            SDL_GPUTransferBufferCreateInfo transfer_info{};
+            transfer_info.size = sizeof(vertices) + sizeof(indices);
+            transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+            SDL_GPUTransferBuffer* buffer_transfer_buffer = SDL_CreateGPUTransferBuffer(render_context.device, &transfer_info);
 
             // fill the transfer buffer
-            Vertex* transferData = (Vertex*)SDL_MapGPUTransferBuffer(renderContext.device, bufferTransferBuffer, false);
-            SDL_memcpy(transferData, (void*)vertices, sizeof(vertices));
-            Uint16* indexData = (Uint16*) &transferData[verticesCount];
-            SDL_memcpy(indexData, (void*)indices, sizeof(indices));
+            Vertex* transfer_data = (Vertex*)SDL_MapGPUTransferBuffer(render_context.device, buffer_transfer_buffer, false);
+            SDL_memcpy(transfer_data, (void*)vertices, sizeof(vertices));
+            Uint16* index_data = (Uint16*) &transfer_data[vertices_count];
+            SDL_memcpy(index_data, (void*)indices, sizeof(indices));
 
-            SDL_UnmapGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
+            SDL_UnmapGPUTransferBuffer(render_context.device, buffer_transfer_buffer);
 
             // start a copy pass
-            SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
-            SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
+            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device);
+            SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
 
             // upload the vertex buffer
-            SDL_GPUTransferBufferLocation vertexBufferlocation{};
-            vertexBufferlocation.transfer_buffer = bufferTransferBuffer;
-            vertexBufferlocation.offset = 0;
-            SDL_GPUBufferRegion vertexRegion{};
-            vertexRegion.buffer = renderData.vertexBuffer;
-            vertexRegion.size = sizeof(vertices);
-            vertexRegion.offset = 0;
-            SDL_UploadToGPUBuffer(copyPass, &vertexBufferlocation, &vertexRegion, false);
+            SDL_GPUTransferBufferLocation vertex_buffer_location{};
+            vertex_buffer_location.transfer_buffer = buffer_transfer_buffer;
+            vertex_buffer_location.offset = 0;
+            SDL_GPUBufferRegion vertex_region{};
+            vertex_region.buffer = render_data.vertex_buffer;
+            vertex_region.size = sizeof(vertices);
+            vertex_region.offset = 0;
+            SDL_UploadToGPUBuffer(copy_pass, &vertex_buffer_location, &vertex_region, false);
 
             // upload the index buffer
-            SDL_GPUTransferBufferLocation indexBufferlocation{};
-            indexBufferlocation.transfer_buffer = bufferTransferBuffer;
-            indexBufferlocation.offset = sizeof(vertices);
-            SDL_GPUBufferRegion indexRegion{};
-            indexRegion.buffer = renderData.indexBuffer;
-            indexRegion.size = sizeof(indices);
-            indexRegion.offset = 0;
-            SDL_UploadToGPUBuffer(copyPass, &indexBufferlocation, &indexRegion, false);
+            SDL_GPUTransferBufferLocation index_buffer_location{};
+            index_buffer_location.transfer_buffer = buffer_transfer_buffer;
+            index_buffer_location.offset = sizeof(vertices);
+            SDL_GPUBufferRegion index_region{};
+            index_region.buffer = render_data.index_buffer;
+            index_region.size = sizeof(indices);
+            index_region.offset = 0;
+            SDL_UploadToGPUBuffer(copy_pass, &index_buffer_location, &index_region, false);
 
             // end the copy pass
-            SDL_EndGPUCopyPass(copyPass);
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
-            SDL_ReleaseGPUTransferBuffer(renderContext.device, bufferTransferBuffer);
+            SDL_EndGPUCopyPass(copy_pass);
+            SDL_SubmitGPUCommandBuffer(command_buffer);
+            SDL_ReleaseGPUTransferBuffer(render_context.device, buffer_transfer_buffer);
 
-            renderData.transform = glm::mat4(1.0f);
-            renderData.transform = glm::rotate(renderData.transform, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            render_data.transform = glm::mat4(1.0f);
+            render_data.transform = glm::rotate(render_data.transform, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         }
-        void Destroy_Render_Data(RenderContext& renderContext, RenderData& renderData){
+        void destroy_render_data(Render_Context& render_context, Render_Data& render_data){
             // release buffers
-            SDL_ReleaseGPUBuffer(renderContext.device, renderData.vertexBuffer);
-            SDL_ReleaseGPUBuffer(renderContext.device, renderData.indexBuffer);
+            SDL_ReleaseGPUBuffer(render_context.device, render_data.vertex_buffer);
+            SDL_ReleaseGPUBuffer(render_context.device, render_data.index_buffer);
         }
 
-        void Render(RenderContext& renderContext, Camera& camera, Meshes& meshes, Lights& lights)
+        void render(Render_Context& render_context, Camera& camera, Meshes& meshes, Lights& lights)
         {
             // acquire the command buffer
-            SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext.device);
+            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device);
 
             // get the swapchain texture
-            SDL_GPUTexture* swapchainTexture;
+            SDL_GPUTexture* swapchain_texture;
             Uint32 width, height;
-            SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, renderContext.window, &swapchainTexture, &width, &height);
+            SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer, render_context.window, &swapchain_texture, &width, &height);
 
             // end the frame early if a swapchain texture is not available
-            if (swapchainTexture == NULL)
+            if (swapchain_texture == NULL)
             {
                 // you must always submit the command buffer
-                SDL_SubmitGPUCommandBuffer(commandBuffer);
+                SDL_SubmitGPUCommandBuffer(command_buffer);
                 return;
             }
 
             // create the color target
-            SDL_GPUColorTargetInfo colorTargetInfo{};
-            colorTargetInfo.clear_color = {0/255.0f, 0/255.0f, 0/255.0f, 255/255.0f};
-            colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-            colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-            colorTargetInfo.texture = swapchainTexture;
+            SDL_GPUColorTargetInfo color_target_info{};
+            color_target_info.clear_color = {0/255.0f, 0/255.0f, 0/255.0f, 255/255.0f};
+            color_target_info.load_op = SDL_GPU_LOADOP_CLEAR;
+            color_target_info.store_op = SDL_GPU_STOREOP_STORE;
+            color_target_info.texture = swapchain_texture;
 
-            SDL_GPUDepthStencilTargetInfo depthStencilTargetInfo = {};
-            depthStencilTargetInfo.texture = renderContext.sceneDepthTexture;
-            depthStencilTargetInfo.cycle = true;
-            depthStencilTargetInfo.clear_depth = 1;
-            depthStencilTargetInfo.clear_stencil = 0;
-            depthStencilTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-            depthStencilTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-            depthStencilTargetInfo.stencil_load_op = SDL_GPU_LOADOP_CLEAR;
-            depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
+            SDL_GPUDepthStencilTargetInfo depth_stencil_target_info = {};
+            depth_stencil_target_info.texture = render_context.scene_depth_texture;
+            depth_stencil_target_info.cycle = true;
+            depth_stencil_target_info.clear_depth = 1;
+            depth_stencil_target_info.clear_stencil = 0;
+            depth_stencil_target_info.load_op = SDL_GPU_LOADOP_CLEAR;
+            depth_stencil_target_info.store_op = SDL_GPU_STOREOP_STORE;
+            depth_stencil_target_info.stencil_load_op = SDL_GPU_LOADOP_CLEAR;
+            depth_stencil_target_info.stencil_store_op = SDL_GPU_STOREOP_STORE;
 
                 // begin a render pass
-                SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, &depthStencilTargetInfo);
+                SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(command_buffer, &color_target_info, 1, &depth_stencil_target_info);
 
                 // bind the pipeline
-                SDL_BindGPUGraphicsPipeline(renderPass, renderContext.graphicsPipeline);
+                SDL_BindGPUGraphicsPipeline(render_pass, render_context.graphics_pipeline);
 
-                VertexUniformBuffer vertexUniformBuffer{};
-                vertexUniformBuffer.view = CameraGetViewMatrix(camera);
-                vertexUniformBuffer.projection = camera.projection;
+                Vertex_Uniform_Buffer vertex_uniform_buffer{};
+                vertex_uniform_buffer.view = camera_get_view_matrix(camera);
+                vertex_uniform_buffer.projection = camera.projection;
 
-                FragmentUniformBuffer fragmentUniformBuffer{};
+                Fragment_Uniform_Buffer fragment_uniform_buffer{};
 
                 for (int i = 0; i < lights.count; ++i) {
-                    fragmentUniformBuffer.lights[i].position = lights.data[i];
-                    fragmentUniformBuffer.lights[i].ambient = glm::vec3(0.2f, 0.2f, 0.2f);
-                    fragmentUniformBuffer.lights[i].diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
-                    fragmentUniformBuffer.lights[i].specular = glm::vec3(1.0f, 1.0f, 1.0f);
-                    fragmentUniformBuffer.lights[i].constantLinearQuadratic = glm::vec3(1.0f, 0.09f, 0.032f);
+                    fragment_uniform_buffer.lights[i].position = lights.data[i];
+                    fragment_uniform_buffer.lights[i].ambient = glm::vec3(0.2f, 0.2f, 0.2f);
+                    fragment_uniform_buffer.lights[i].diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+                    fragment_uniform_buffer.lights[i].specular = glm::vec3(1.0f, 1.0f, 1.0f);
+                    fragment_uniform_buffer.lights[i].constant_linear_quadratic = glm::vec3(1.0f, 0.09f, 0.032f);
                 }
-                fragmentUniformBuffer.numberOfLights = lights.count;
-                fragmentUniformBuffer.cameraPosition = camera.position;
-                SDL_PushGPUFragmentUniformData(commandBuffer, 0, &fragmentUniformBuffer, sizeof(FragmentUniformBuffer));
+                fragment_uniform_buffer.number_of_lights = lights.count;
+                fragment_uniform_buffer.camera_position = camera.position;
+                SDL_PushGPUFragmentUniformData(command_buffer, 0, &fragment_uniform_buffer, sizeof(Fragment_Uniform_Buffer));
 
-                SDL_GPUTextureSamplerBinding textureSamplerBinding[4];
-                textureSamplerBinding[0].texture = renderContext.diffuseMap;
-                textureSamplerBinding[0].sampler = renderContext.sampler;
-                textureSamplerBinding[1].texture = renderContext.specularMap;
-                textureSamplerBinding[1].sampler = renderContext.sampler;
-                textureSamplerBinding[2].texture = renderContext.shininessMap;
-                textureSamplerBinding[2].sampler = renderContext.sampler;
-                textureSamplerBinding[3].texture = renderContext.sceneDepthTexture;
-                textureSamplerBinding[3].sampler = renderContext.sampler;
-                SDL_BindGPUFragmentSamplers(renderPass, 0, textureSamplerBinding, 3);
+                SDL_GPUTextureSamplerBinding texture_sampler_binding[4];
+                texture_sampler_binding[0].texture = render_context.diffuse_map;
+                texture_sampler_binding[0].sampler = render_context.sampler;
+                texture_sampler_binding[1].texture = render_context.specular_map;
+                texture_sampler_binding[1].sampler = render_context.sampler;
+                texture_sampler_binding[2].texture = render_context.shininess_map;
+                texture_sampler_binding[2].sampler = render_context.sampler;
+                texture_sampler_binding[3].texture = render_context.scene_depth_texture;
+                texture_sampler_binding[3].sampler = render_context.sampler;
+                SDL_BindGPUFragmentSamplers(render_pass, 0, texture_sampler_binding, 3);
                 for (int i = 0; i < meshes.count; ++i) {
-                    vertexUniformBuffer.model = meshes.data[i].transform;
-                    SDL_PushGPUVertexUniformData(commandBuffer, 0, &vertexUniformBuffer, sizeof(VertexUniformBuffer));
+                    vertex_uniform_buffer.model = meshes.data[i].transform;
+                    SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
 
                     // bind the vertex buffer
-                    SDL_GPUBufferBinding vertexBufferBinding{};
-                    vertexBufferBinding.buffer = meshes.data[i].vertexBuffer;
-                    vertexBufferBinding.offset = 0;
-                    SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
+                    SDL_GPUBufferBinding vertex_buffer_binding{};
+                    vertex_buffer_binding.buffer = meshes.data[i].vertex_buffer;
+                    vertex_buffer_binding.offset = 0;
+                    SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_buffer_binding, 1);
 
-                    SDL_GPUBufferBinding indexBufferBinding{};
-                    indexBufferBinding.buffer = meshes.data[i].indexBuffer;
-                    indexBufferBinding.offset = 0;
-                    SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+                    SDL_GPUBufferBinding index_buffer_binding{};
+                    index_buffer_binding.buffer = meshes.data[i].index_buffer;
+                    index_buffer_binding.offset = 0;
+                    SDL_BindGPUIndexBuffer(render_pass, &index_buffer_binding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
 
                     // issue a draw call
-                    SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);
+                    SDL_DrawGPUIndexedPrimitives(render_pass, 36, 1, 0, 0, 0);
                 }
 
                 // end the render pass
-                SDL_EndGPURenderPass(renderPass);
+                SDL_EndGPURenderPass(render_pass);
 
             // submit the command buffer
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
+            SDL_SubmitGPUCommandBuffer(command_buffer);
         }
     #pragma endregion Renderer
 
     #pragma region Game
-    void Load_Meshes(RenderContext& renderContext, Meshes& meshes)
+        void destroy_meshes(Render_Context& render_context, Meshes& meshes)
         {
-            glm::vec3 cubePositions[] = {
+            for (int i = 0; i < meshes.count; ++i) {
+                destroy_render_data(render_context, meshes.data[i]);
+            }
+        }
+
+        void init(Render_Context& render_context)
+        {
+            create_window(render_context);
+            create_render_pipeline(render_context);
+            create_depth_buffer(render_context);
+            load_textures(render_context);
+        }
+        void cleanup(Render_Context& render_context, Meshes& meshes)
+        {
+            destroy_meshes(render_context, meshes);
+            destroy_textures(render_context);
+            destroy_depth_buffer(render_context);
+            destroy_render_pipeline(render_context);
+            destroy_window(render_context);
+        }
+    
+        void load_meshes(Render_Context& render_context, Meshes& meshes)
+        {
+            glm::vec3 cube_positions[] = {
                 glm::vec3( 0.0f,  0.0f,  0.0f), 
                 glm::vec3( 2.0f,  5.0f, -15.0f), 
                 glm::vec3(-1.5f, -2.2f, -2.5f),  
@@ -702,25 +725,20 @@ namespace deep
 
             for(unsigned int i = 0; i < 10; i++)
             {
-                Create_Render_Data(renderContext, meshes.data[i]);
+                create_render_data(render_context, meshes.data[i]);
 
                 meshes.data[i].transform = glm::mat4(1.0f);
-                meshes.data[i].transform = glm::translate(meshes.data[i].transform, cubePositions[i]);
+                meshes.data[i].transform = glm::translate(meshes.data[i].transform, cube_positions[i]);
                 float angle = 20.0f * i; 
                 meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             }
             meshes.data[9].transform = glm::scale(meshes.data[9].transform, glm::vec3(0.1f));
             meshes.count = 10;
         }
-        void Destroy_Meshes(RenderContext& renderContext, Meshes& meshes)
+        
+        void load_lights(Lights& lights)
         {
-            for (int i = 0; i < meshes.count; ++i) {
-                Destroy_Render_Data(renderContext, meshes.data[i]);
-            }
-        }
-        void Load_Lights(Lights& lights)
-        {
-            glm::vec3 pointLightPositions[] = {
+            glm::vec3 light_positions[] = {
                 glm::vec3( 0.7f,  0.2f,  2.0f),
                 glm::vec3( 2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f,  2.0f, -12.0f),
@@ -728,9 +746,10 @@ namespace deep
             };  
             for(unsigned int i = 0; i < 4; i++)
             {
-                lights.data[i] = pointLightPositions[i];
+                lights.data[i] = light_positions[i];
             }
             lights.count = 4;
         }
-    #pragma endregion Game
+        
+        #pragma endregion Game
 } 
