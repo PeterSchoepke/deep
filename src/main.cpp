@@ -11,12 +11,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::set_camera_position(glm::vec3(0.0f, 1.8f, 6.0f));
     deep::mouse_lock(true);
 
-    deep::add_light(glm::vec3(10.0f, 4.0f, 10.0f));
-    deep::add_light(glm::vec3(-10.0f, 4.0f, 10.0f));
-    deep::add_light(glm::vec3(10.0f, 4.0f, -10.0f));
-    deep::add_light(glm::vec3(-10.0f, 4.0f, -10.0f));
-    deep::add_mesh("ressources/models/floor.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::add_mesh("ressources/models/cube.glb", glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, 10.0f));
+    deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, 10.0f));
+    deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, -10.0f));
+    deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, -10.0f));
+    deep::add_mesh(deep::create_entity(), "ressources/models/floor.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::add_mesh(deep::create_entity(), "ressources/models/cube.glb", glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
     return SDL_APP_CONTINUE;
 }

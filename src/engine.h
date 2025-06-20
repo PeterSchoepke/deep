@@ -25,14 +25,6 @@ namespace deepcore
             SDL_GPUTexture* scene_depth_texture;
         };
 
-        struct Render_Data
-        {
-            SDL_GPUBuffer* vertex_buffer;
-            SDL_GPUBuffer* index_buffer;
-            int index_count;
-            glm::mat4 transform;
-        };
-
         struct Vertex
         {
             float position[3];
@@ -87,16 +79,22 @@ namespace deepcore
             glm::mat4 projection;
         };
 
-        struct Meshes
+        struct Entity
         {
-            Render_Data data[10];
-            int max_count = 10;
-            int count = 0;
-        };
+            int id;
+            glm::mat4 transform = glm::mat4(1.0f);
 
-        struct Lights
+            bool light_component = false;
+            glm::vec3 light_position = glm::vec3(0.0f, 0.0f, 0.0f);
+
+            bool mesh_component = false;
+            SDL_GPUBuffer* vertex_buffer;
+            SDL_GPUBuffer* index_buffer;
+            int index_count;
+        };
+        struct Entities
         {
-            glm::vec3 data[10];
+            Entity data[10];
             int max_count = 10;
             int count = 0;
         };
@@ -104,8 +102,7 @@ namespace deepcore
 
     #pragma region Globals
         Render_Context render_context{};
-        Meshes meshes{};
-        Lights lights{};
+        Entities entities{};
         Camera camera{};
     #pragma endregion Globals
 
@@ -475,7 +472,7 @@ namespace deepcore
             SDL_ReleaseGPUSampler(render_context.device, render_context.sampler);
         }
 
-        void create_render_data(Render_Data& render_data, std::vector<Vertex>& vertices, std::vector<Uint16>& indices)
+        void create_render_data(Entity& render_data, std::vector<Vertex>& vertices, std::vector<Uint16>& indices)
         {
             // create the vertex buffer
             SDL_GPUBufferCreateInfo vertex_buffer_info{};
@@ -536,13 +533,13 @@ namespace deepcore
             render_data.transform = glm::mat4(1.0f);
             render_data.transform = glm::rotate(render_data.transform, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         }
-        void destroy_render_data(Render_Data& render_data){
+        void destroy_render_data(Entity& render_data){
             // release buffers
             SDL_ReleaseGPUBuffer(render_context.device, render_data.vertex_buffer);
             SDL_ReleaseGPUBuffer(render_context.device, render_data.index_buffer);
         }
 
-        void load_gltf(const char *model_filename, Render_Data& render_data)
+        void load_gltf(const char *model_filename, Entity& render_data)
         {
             cgltf_options options = {};
             cgltf_data* data = NULL;
@@ -692,14 +689,19 @@ namespace deepcore
 
                 Fragment_Uniform_Buffer fragment_uniform_buffer{};
 
-                for (int i = 0; i < lights.count; ++i) {
-                    fragment_uniform_buffer.lights[i].position = lights.data[i];
-                    fragment_uniform_buffer.lights[i].ambient = glm::vec3(0.2f, 0.2f, 0.2f);
-                    fragment_uniform_buffer.lights[i].diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
-                    fragment_uniform_buffer.lights[i].specular = glm::vec3(1.0f, 1.0f, 1.0f);
-                    fragment_uniform_buffer.lights[i].constant_linear_quadratic = glm::vec3(1.0f, 0.09f, 0.032f);
+                int lights_count = 0;
+                for (int i = 0; i < entities.count; ++i) {
+                    if(entities.data[i].light_component)
+                    {
+                        fragment_uniform_buffer.lights[lights_count].position = entities.data[i].light_position;
+                        fragment_uniform_buffer.lights[lights_count].ambient = glm::vec3(0.2f, 0.2f, 0.2f);
+                        fragment_uniform_buffer.lights[lights_count].diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+                        fragment_uniform_buffer.lights[lights_count].specular = glm::vec3(1.0f, 1.0f, 1.0f);
+                        fragment_uniform_buffer.lights[lights_count].constant_linear_quadratic = glm::vec3(1.0f, 0.09f, 0.032f);
+                        lights_count++;
+                    }
                 }
-                fragment_uniform_buffer.number_of_lights = lights.count;
+                fragment_uniform_buffer.number_of_lights = lights_count;
                 fragment_uniform_buffer.camera_position = camera.position;
                 SDL_PushGPUFragmentUniformData(command_buffer, 0, &fragment_uniform_buffer, sizeof(Fragment_Uniform_Buffer));
 
@@ -713,23 +715,26 @@ namespace deepcore
                 texture_sampler_binding[3].texture = render_context.scene_depth_texture;
                 texture_sampler_binding[3].sampler = render_context.sampler;
                 SDL_BindGPUFragmentSamplers(render_pass, 0, texture_sampler_binding, 3);
-                for (int i = 0; i < meshes.count; ++i) {
-                    vertex_uniform_buffer.model = meshes.data[i].transform;
-                    SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
+                for (int i = 0; i < entities.count; ++i) {
+                    if(entities.data[i].mesh_component)
+                    {
+                        vertex_uniform_buffer.model = entities.data[i].transform;
+                        SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
 
-                    // bind the vertex buffer
-                    SDL_GPUBufferBinding vertex_buffer_binding{};
-                    vertex_buffer_binding.buffer = meshes.data[i].vertex_buffer;
-                    vertex_buffer_binding.offset = 0;
-                    SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_buffer_binding, 1);
+                        // bind the vertex buffer
+                        SDL_GPUBufferBinding vertex_buffer_binding{};
+                        vertex_buffer_binding.buffer = entities.data[i].vertex_buffer;
+                        vertex_buffer_binding.offset = 0;
+                        SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_buffer_binding, 1);
 
-                    SDL_GPUBufferBinding index_buffer_binding{};
-                    index_buffer_binding.buffer = meshes.data[i].index_buffer;
-                    index_buffer_binding.offset = 0;
-                    SDL_BindGPUIndexBuffer(render_pass, &index_buffer_binding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+                        SDL_GPUBufferBinding index_buffer_binding{};
+                        index_buffer_binding.buffer = entities.data[i].index_buffer;
+                        index_buffer_binding.offset = 0;
+                        SDL_BindGPUIndexBuffer(render_pass, &index_buffer_binding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
 
-                    // issue a draw call
-                    SDL_DrawGPUIndexedPrimitives(render_pass, meshes.data[i].index_count, 1, 0, 0, 0);
+                        // issue a draw call
+                        SDL_DrawGPUIndexedPrimitives(render_pass, entities.data[i].index_count, 1, 0, 0, 0);
+                    }
                 }
 
                 // end the render pass
@@ -743,8 +748,11 @@ namespace deepcore
     #pragma region Game
         void destroy_meshes()
         {
-            for (int i = 0; i < meshes.count; ++i) {
-                destroy_render_data(meshes.data[i]);
+            for (int i = 0; i < entities.count; ++i) {
+                if(entities.data[i].mesh_component)
+                {
+                    destroy_render_data(entities.data[i]);
+                }
             }
         }
 
@@ -776,34 +784,35 @@ namespace deepcore
 
         void mouse_lock(bool lock) { SDL_SetWindowRelativeMouseMode(render_context.window, lock); }
 
-        int add_light(glm::vec3 position)
+        int create_entity()
         {
-            if(lights.count < lights.max_count)
+            if(entities.count < entities.max_count)
             {
-                lights.data[lights.count] = position;
-                lights.count += 1;
-                return lights.count-1;
+                entities.data[entities.count].id = entities.count;
+                entities.count += 1;
+                return entities.count-1;
             }
             return -1;
         }
 
-        int add_mesh(const char *filename, glm::vec3 position, glm::vec3 rotation)
+        void add_light(int entity_id, glm::vec3 position)
         {
-            if(meshes.count < meshes.max_count)
-            {
-                int i = meshes.count;
-                load_gltf(filename, meshes.data[i]);
-                
-                meshes.data[i].transform = glm::mat4(1.0f);
-                meshes.data[i].transform = glm::translate(meshes.data[i].transform, position);
-                meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-                meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-                meshes.data[i].transform = glm::rotate(meshes.data[i].transform, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+            entities.data[entity_id].light_component = true;
+            entities.data[entity_id].light_position = position;
+        }
 
-                meshes.count += 1;
-                return meshes.count-1;
-            }
-            return -1;
+        void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation)
+        {
+            Entity &mesh = entities.data[entity_id];
+            entities.data[entity_id].mesh_component = true;
+
+            load_gltf(filename, mesh);
+            
+            mesh.transform = glm::mat4(1.0f);
+            mesh.transform = glm::translate(mesh.transform, position);
+            mesh.transform = glm::rotate(mesh.transform, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+            mesh.transform = glm::rotate(mesh.transform, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+            mesh.transform = glm::rotate(mesh.transform, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
         }
         
         #pragma endregion Game
@@ -823,7 +832,8 @@ namespace deep
     void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) { deepcore::camera_process_keyboard(forward, back, left, right, up, down, delta_time); }
     void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch) { deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch); }
 
-    int add_light(glm::vec3 position) { return deepcore::add_light(position); }
-    int add_mesh(const char *filename, glm::vec3 position, glm::vec3 rotation) { return deepcore::add_mesh(filename, position, rotation); }
+    int create_entity() { return deepcore::create_entity(); }
+    void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }
+    void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation) { deepcore::add_mesh(entity_id, filename, position, rotation); }
     #pragma endregion Interface
 }
