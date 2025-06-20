@@ -1,9 +1,12 @@
 #pragma once
 
+#define CGLTF_IMPLEMENTATION
+
 #include <SDL3/SDL.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <glm/glm/glm.hpp>
+#include <glm/glm/gtc/matrix_transform.hpp>
+#include <glm/glm/gtc/type_ptr.hpp>
+#include <cgltf/cgltf.h>
 
 namespace deepcore
 {
@@ -26,14 +29,15 @@ namespace deepcore
         {
             SDL_GPUBuffer* vertex_buffer;
             SDL_GPUBuffer* index_buffer;
+            int index_count;
             glm::mat4 transform;
         };
 
         struct Vertex
         {
-            float x, y, z;      //vec3 position
-            float r, g, b, a;   //vec4 color
-            float nx, ny, nz;   //vec3 normals
+            float position[3];
+            float texcoord[2];
+            float normal[3];
         };
 
         struct Vertex_Uniform_Buffer
@@ -471,96 +475,31 @@ namespace deepcore
             SDL_ReleaseGPUSampler(render_context.device, render_context.sampler);
         }
 
-        void create_render_data(Render_Data& render_data)
+        void create_render_data(Render_Data& render_data, std::vector<Vertex>& vertices, std::vector<Uint16>& indices)
         {
-            Vertex vertices[]
-            {
-                // Front face (Z = 0.5)
-                // Normal: (0.0f, 0.0f, 1.0f) - points along positive Z-axis
-                {-0.5f, -0.5f,  0.5f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f}, // 0
-                { 0.5f, -0.5f,  0.5f, 1.0f, 0.0f,  0.0f, 0.0f, 1.0f}, // 1
-                { 0.5f,  0.5f,  0.5f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f}, // 2
-                {-0.5f,  0.5f,  0.5f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f}, // 3
-
-                // Back face (Z = -0.5)
-                // Normal: (0.0f, 0.0f, -1.0f) - points along negative Z-axis
-                {-0.5f, -0.5f, -0.5f, 1.0f, 0.0f,  0.0f, 0.0f, -1.0f}, // 4
-                { 0.5f, -0.5f, -0.5f, 0.0f, 0.0f,  0.0f, 0.0f, -1.0f}, // 5
-                { 0.5f,  0.5f, -0.5f, 0.0f, 1.0f,  0.0f, 0.0f, -1.0f}, // 6
-                {-0.5f,  0.5f, -0.5f, 1.0f, 1.0f,  0.0f, 0.0f, -1.0f}, // 7
-
-                // Top face (Y = 0.5)
-                // Normal: (0.0f, 1.0f, 0.0f) - points along positive Y-axis
-                {-0.5f,  0.5f,  0.5f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f}, // 8 (same pos as 3)
-                { 0.5f,  0.5f,  0.5f, 1.0f, 1.0f,  0.0f, 1.0f, 0.0f}, // 9 (same pos as 2)
-                { 0.5f,  0.5f, -0.5f, 1.0f, 0.0f,  0.0f, 1.0f, 0.0f}, // 10 (same pos as 6)
-                {-0.5f,  0.5f, -0.5f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f}, // 11 (same pos as 7)
-
-                // Bottom face (Y = -0.5)
-                // Normal: (0.0f, -1.0f, 0.0f) - points along negative Y-axis
-                {-0.5f, -0.5f,  0.5f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f}, // 12 (same pos as 0)
-                { 0.5f, -0.5f,  0.5f, 1.0f, 0.0f,  0.0f, -1.0f, 0.0f}, // 13 (same pos as 1)
-                { 0.5f, -0.5f, -0.5f, 1.0f, 1.0f,  0.0f, -1.0f, 0.0f}, // 14 (same pos as 5)
-                {-0.5f, -0.5f, -0.5f, 0.0f, 1.0f,  0.0f, -1.0f, 0.0f}, // 15 (same pos as 4)
-
-                // Right face (X = 0.5)
-                // Normal: (1.0f, 0.0f, 0.0f) - points along positive X-axis
-                { 0.5f, -0.5f,  0.5f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f}, // 16 (same pos as 1)
-                { 0.5f, -0.5f, -0.5f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f}, // 17 (same pos as 5)
-                { 0.5f,  0.5f, -0.5f, 1.0f, 1.0f,  1.0f, 0.0f, 0.0f}, // 18 (same pos as 6)
-                { 0.5f,  0.5f,  0.5f, 0.0f, 1.0f,  1.0f, 0.0f, 0.0f}, // 19 (same pos as 2)
-
-                // Left face (X = -0.5)
-                // Normal: (-1.0f, 0.0f, 0.0f) - points along negative X-axis
-                {-0.5f, -0.5f,  0.5f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f}, // 20 (same pos as 0)
-                {-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f}, // 21 (same pos as 4)
-                {-0.5f,  0.5f, -0.5f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f}, // 22 (same pos as 7)
-                {-0.5f,  0.5f,  0.5f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f}  // 23 (same pos as 3)
-            };
-            Uint16 indices[] = {  
-                // Front face
-                0, 1, 2,  2, 3, 0,
-
-                // Back face
-                4, 7, 6,  6, 5, 4,
-
-                // Top face
-                8, 9, 10,  10, 11, 8,
-
-                // Bottom face
-                12, 15, 14,  14, 13, 12,
-
-                // Right face
-                16, 17, 18,  18, 19, 16,
-
-                // Left face
-                20, 23, 22,  22, 21, 20,
-            };
-            Uint16 vertices_count = sizeof(vertices) / sizeof(Vertex);
-
             // create the vertex buffer
             SDL_GPUBufferCreateInfo vertex_buffer_info{};
-            vertex_buffer_info.size = sizeof(vertices);
+            vertex_buffer_info.size = vertices.size() * sizeof(Vertex);
             vertex_buffer_info.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
             render_data.vertex_buffer = SDL_CreateGPUBuffer(render_context.device, &vertex_buffer_info);
 
             // create the index buffer
             SDL_GPUBufferCreateInfo index_buffer_info{};
-            index_buffer_info.size = sizeof(indices);
+            index_buffer_info.size = indices.size() * sizeof(Uint16);
             index_buffer_info.usage = SDL_GPU_BUFFERUSAGE_INDEX;
             render_data.index_buffer = SDL_CreateGPUBuffer(render_context.device, &index_buffer_info);
 
             // create a transfer buffer to upload to the vertex buffer
             SDL_GPUTransferBufferCreateInfo transfer_info{};
-            transfer_info.size = sizeof(vertices) + sizeof(indices);
+            transfer_info.size = vertices.size() * sizeof(Vertex) + indices.size() * sizeof(Uint16);
             transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
             SDL_GPUTransferBuffer* buffer_transfer_buffer = SDL_CreateGPUTransferBuffer(render_context.device, &transfer_info);
 
             // fill the transfer buffer
             Vertex* transfer_data = (Vertex*)SDL_MapGPUTransferBuffer(render_context.device, buffer_transfer_buffer, false);
-            SDL_memcpy(transfer_data, (void*)vertices, sizeof(vertices));
-            Uint16* index_data = (Uint16*) &transfer_data[vertices_count];
-            SDL_memcpy(index_data, (void*)indices, sizeof(indices));
+            SDL_memcpy(transfer_data, vertices.data(), vertices.size() * sizeof(Vertex));
+            Uint16* index_data = (Uint16*) &transfer_data[vertices.size()];
+            SDL_memcpy(index_data, indices.data(), indices.size() * sizeof(Uint16));
 
             SDL_UnmapGPUTransferBuffer(render_context.device, buffer_transfer_buffer);
 
@@ -574,17 +513,17 @@ namespace deepcore
             vertex_buffer_location.offset = 0;
             SDL_GPUBufferRegion vertex_region{};
             vertex_region.buffer = render_data.vertex_buffer;
-            vertex_region.size = sizeof(vertices);
+            vertex_region.size = vertices.size() * sizeof(Vertex);
             vertex_region.offset = 0;
             SDL_UploadToGPUBuffer(copy_pass, &vertex_buffer_location, &vertex_region, false);
 
             // upload the index buffer
             SDL_GPUTransferBufferLocation index_buffer_location{};
             index_buffer_location.transfer_buffer = buffer_transfer_buffer;
-            index_buffer_location.offset = sizeof(vertices);
+            index_buffer_location.offset = vertices.size() * sizeof(Vertex);
             SDL_GPUBufferRegion index_region{};
             index_region.buffer = render_data.index_buffer;
-            index_region.size = sizeof(indices);
+            index_region.size = indices.size() * sizeof(Uint16);
             index_region.offset = 0;
             SDL_UploadToGPUBuffer(copy_pass, &index_buffer_location, &index_region, false);
 
@@ -593,6 +532,7 @@ namespace deepcore
             SDL_SubmitGPUCommandBuffer(command_buffer);
             SDL_ReleaseGPUTransferBuffer(render_context.device, buffer_transfer_buffer);
 
+            render_data.index_count = indices.size();
             render_data.transform = glm::mat4(1.0f);
             render_data.transform = glm::rotate(render_data.transform, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         }
@@ -600,6 +540,109 @@ namespace deepcore
             // release buffers
             SDL_ReleaseGPUBuffer(render_context.device, render_data.vertex_buffer);
             SDL_ReleaseGPUBuffer(render_context.device, render_data.index_buffer);
+        }
+
+        void load_gltf(const char *model_filename, Render_Data& render_data)
+        {
+            cgltf_options options = {};
+            cgltf_data* data = NULL;
+            cgltf_result result = cgltf_parse_file(&options, model_filename, &data);
+
+            if (result == cgltf_result_success)
+            {
+                result = cgltf_load_buffers(&options, data, model_filename);
+                if (result == cgltf_result_success)
+                {
+                    if(data->meshes_count > 0)
+                    {
+                        cgltf_mesh* mesh = &data->meshes[0];
+
+                        for(int i = 0; i < mesh->primitives_count; i++)
+                        {
+                            cgltf_primitive* primitive = &mesh->primitives[i];
+                            if(primitive->type == cgltf_primitive_type_triangles)
+                            {
+                                std::vector<Vertex> vertices;
+                                std::vector<Uint16> indices;
+
+                                Uint16 current_vertex_offset = vertices.size();
+                                
+                                const cgltf_accessor* pos_accessor = NULL;
+                                const cgltf_accessor* normal_accessor = NULL;
+                                const cgltf_accessor* texcoord_accessor = NULL;
+
+                                for (size_t j = 0; j < primitive->attributes_count; ++j) {
+                                    const cgltf_attribute* attribute = &primitive->attributes[j];
+                                    if (attribute->type == cgltf_attribute_type_position) {
+                                        pos_accessor = attribute->data;
+                                    } else if (attribute->type == cgltf_attribute_type_normal) {
+                                        normal_accessor = attribute->data;
+                                    } else if (attribute->type == cgltf_attribute_type_texcoord) { // TEXCOORD_0
+                                        texcoord_accessor = attribute->data;
+                                    }
+                                    // Add more attribute types (e.g., TANGENT, COLOR_0) as needed
+                                }
+
+                                if (pos_accessor) {
+                                    vertices.reserve(vertices.size() + pos_accessor->count);
+
+                                    for (cgltf_size k = 0; k < pos_accessor->count; ++k) {
+                                        Vertex v = {};
+
+                                        cgltf_accessor_read_float(pos_accessor, k, v.position, 3);
+
+                                        if (normal_accessor) {
+                                            cgltf_accessor_read_float(normal_accessor, k, v.normal, 3);
+                                        } else {
+                                            v.normal[0] = 0.0f; v.normal[1] = 0.0f; v.normal[2] = 0.0f;
+                                        }
+
+                                        if (texcoord_accessor) {
+                                            cgltf_accessor_read_float(texcoord_accessor, k, v.texcoord, 2);
+                                        } else {                                        
+                                            v.texcoord[0] = 0.0f; v.texcoord[1] = 0.0f;
+                                        }
+                                        vertices.push_back(v);
+                                    }
+                                } else {
+                                    SDL_Log("Warning: Primitive found without position data.\n");
+                                    continue;
+                                }
+
+
+                                if (primitive->indices != NULL) {
+                                    const cgltf_accessor* indices_accessor = primitive->indices;
+
+                                    indices.reserve(indices.size() + indices_accessor->count);
+
+                                    for (cgltf_size k = 0; k < indices_accessor->count; ++k) {
+                                        unsigned int index;
+                                        cgltf_accessor_read_uint(indices_accessor, k, &index, 1);
+
+                                        indices.push_back(current_vertex_offset + index);
+                                    }
+                                } else {
+                                    if (pos_accessor->count % 3 != 0) {
+                                        SDL_Log("Warning: Unindexed primitive has vertex count (%zu) not divisible by 3.\n", (size_t)pos_accessor->count);
+                                    }
+
+                                    indices.reserve(indices.size() + pos_accessor->count);
+                                    for (Uint16 k = 0; k < pos_accessor->count; ++k) {
+                                        indices.push_back(current_vertex_offset + k);
+                                    }
+                                }
+
+                                create_render_data(render_data, vertices, indices);
+                            }
+                        }
+                    }
+                } else {
+                    SDL_Log("Failed to load glTF buffers for %s", model_filename);
+                }
+                cgltf_free(data);
+            } else {
+                SDL_Log("Failed to parse glTF file %s", model_filename);
+            }
         }
 
         void render()
@@ -686,7 +729,7 @@ namespace deepcore
                     SDL_BindGPUIndexBuffer(render_pass, &index_buffer_binding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
 
                     // issue a draw call
-                    SDL_DrawGPUIndexedPrimitives(render_pass, 36, 1, 0, 0, 0);
+                    SDL_DrawGPUIndexedPrimitives(render_pass, meshes.data[i].index_count, 1, 0, 0, 0);
                 }
 
                 // end the render pass
@@ -744,12 +787,12 @@ namespace deepcore
             return -1;
         }
 
-        int add_mesh(glm::vec3 position, glm::vec3 rotation)
+        int add_mesh(const char *filename, glm::vec3 position, glm::vec3 rotation)
         {
             if(meshes.count < meshes.max_count)
             {
                 int i = meshes.count;
-                create_render_data(meshes.data[i]);
+                load_gltf(filename, meshes.data[i]);
                 
                 meshes.data[i].transform = glm::mat4(1.0f);
                 meshes.data[i].transform = glm::translate(meshes.data[i].transform, position);
@@ -781,6 +824,6 @@ namespace deep
     void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch) { deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch); }
 
     int add_light(glm::vec3 position) { return deepcore::add_light(position); }
-    int add_mesh(glm::vec3 position, glm::vec3 rotation) { return deepcore::add_mesh(position, rotation); }
+    int add_mesh(const char *filename, glm::vec3 position, glm::vec3 rotation) { return deepcore::add_mesh(filename, position, rotation); }
     #pragma endregion Interface
 }

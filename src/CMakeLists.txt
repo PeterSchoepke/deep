@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-set(GLM_ROOT_DIR ${CMAKE_SOURCE_DIR}/vendor/glm)
+set(GLM_ROOT_DIR ${CMAKE_SOURCE_DIR}/vendor)
 
 add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE 
