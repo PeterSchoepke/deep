@@ -8,6 +8,25 @@
 #include <glm/glm/gtc/type_ptr.hpp>
 #include <cgltf/cgltf.h>
 
+namespace deep
+{
+    struct Entity
+    {
+        int id;
+        glm::mat4 transform = glm::mat4(1.0f);
+
+        bool light_component = false;
+        glm::vec3 light_position = glm::vec3(0.0f, 0.0f, 0.0f);
+
+        bool mesh_component = false;
+        SDL_GPUBuffer* vertex_buffer;
+        SDL_GPUBuffer* index_buffer;
+        int index_count;
+
+        bool hurt_component = false;
+    };
+}
+
 namespace deepcore
 {
     #pragma region Data
@@ -79,22 +98,9 @@ namespace deepcore
             glm::mat4 projection;
         };
 
-        struct Entity
-        {
-            int id;
-            glm::mat4 transform = glm::mat4(1.0f);
-
-            bool light_component = false;
-            glm::vec3 light_position = glm::vec3(0.0f, 0.0f, 0.0f);
-
-            bool mesh_component = false;
-            SDL_GPUBuffer* vertex_buffer;
-            SDL_GPUBuffer* index_buffer;
-            int index_count;
-        };
         struct Entities
         {
-            Entity data[10];
+            deep::Entity data[10];
             int max_count = 10;
             int count = 0;
         };
@@ -168,6 +174,11 @@ namespace deepcore
             camera.mouse_sensitivity = 0.1f;
 
             camera.projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
+        }
+
+        glm::vec2 camera_get_position_2d()
+        {
+            return glm::vec2(camera.position.x, camera.position.z);
         }
 
         void camera_set_position(glm::vec3 position)
@@ -472,7 +483,7 @@ namespace deepcore
             SDL_ReleaseGPUSampler(render_context.device, render_context.sampler);
         }
 
-        void create_render_data(Entity& render_data, std::vector<Vertex>& vertices, std::vector<Uint16>& indices)
+        void create_render_data(deep::Entity& render_data, std::vector<Vertex>& vertices, std::vector<Uint16>& indices)
         {
             // create the vertex buffer
             SDL_GPUBufferCreateInfo vertex_buffer_info{};
@@ -533,13 +544,13 @@ namespace deepcore
             render_data.transform = glm::mat4(1.0f);
             render_data.transform = glm::rotate(render_data.transform, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         }
-        void destroy_render_data(Entity& render_data){
+        void destroy_render_data(deep::Entity& render_data){
             // release buffers
             SDL_ReleaseGPUBuffer(render_context.device, render_data.vertex_buffer);
             SDL_ReleaseGPUBuffer(render_context.device, render_data.index_buffer);
         }
 
-        void load_gltf(const char *model_filename, Entity& render_data)
+        void load_gltf(const char *model_filename, deep::Entity& render_data)
         {
             cgltf_options options = {};
             cgltf_data* data = NULL;
@@ -795,6 +806,16 @@ namespace deepcore
             return -1;
         }
 
+        int get_entity_count()
+        {
+            return entities.count;
+        }
+
+        deep::Entity& get_entity(int entity_id)
+        {
+            return entities.data[entity_id];
+        }
+
         void add_light(int entity_id, glm::vec3 position)
         {
             entities.data[entity_id].light_component = true;
@@ -803,7 +824,7 @@ namespace deepcore
 
         void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation)
         {
-            Entity &mesh = entities.data[entity_id];
+            deep::Entity &mesh = entities.data[entity_id];
             entities.data[entity_id].mesh_component = true;
 
             load_gltf(filename, mesh);
@@ -828,11 +849,15 @@ namespace deep
     double get_delta_time() { return deepcore::get_delta_time(); }
     void mouse_lock(bool lock) { deepcore::mouse_lock(lock); }
 
+    glm::vec2 get_camera_position_2d() { return deepcore::camera_get_position_2d(); }
     void set_camera_position(glm::vec3 position) { deepcore::camera_set_position(position); }
     void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) { deepcore::camera_process_keyboard(forward, back, left, right, up, down, delta_time); }
     void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch) { deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch); }
 
     int create_entity() { return deepcore::create_entity(); }
+    int get_entity_count() { return deepcore::get_entity_count(); }
+    Entity& get_entity(int entity_id) { return deepcore::get_entity(entity_id); }
+    glm::vec2 get_entity_position_2d(Entity& entity) { glm::vec3 p = glm::vec3(entity.transform[3]); return glm::vec2(p.x, p.z); }
     void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }
     void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation) { deepcore::add_mesh(entity_id, filename, position, rotation); }
     #pragma endregion Interface
