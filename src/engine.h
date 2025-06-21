@@ -13,6 +13,7 @@ namespace deep
     struct Entity
     {
         int id;
+        bool is_active = true;
         glm::mat4 transform = glm::mat4(1.0f);
 
         bool light_component = false;
@@ -727,7 +728,7 @@ namespace deepcore
                 texture_sampler_binding[3].sampler = render_context.sampler;
                 SDL_BindGPUFragmentSamplers(render_pass, 0, texture_sampler_binding, 3);
                 for (int i = 0; i < entities.count; ++i) {
-                    if(entities.data[i].mesh_component)
+                    if(entities.data[i].is_active && entities.data[i].mesh_component)
                     {
                         vertex_uniform_buffer.model = entities.data[i].transform;
                         SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
@@ -811,9 +812,9 @@ namespace deepcore
             return entities.count;
         }
 
-        deep::Entity& get_entity(int entity_id)
+        deep::Entity* get_entity(int entity_id)
         {
-            return entities.data[entity_id];
+            return &entities.data[entity_id];
         }
 
         void add_light(int entity_id, glm::vec3 position)
@@ -856,8 +857,8 @@ namespace deep
 
     int create_entity() { return deepcore::create_entity(); }
     int get_entity_count() { return deepcore::get_entity_count(); }
-    Entity& get_entity(int entity_id) { return deepcore::get_entity(entity_id); }
-    glm::vec2 get_entity_position_2d(Entity& entity) { glm::vec3 p = glm::vec3(entity.transform[3]); return glm::vec2(p.x, p.z); }
+    Entity* get_entity(int entity_id) { return deepcore::get_entity(entity_id); }
+    glm::vec2 get_entity_position_2d(Entity* entity) { glm::vec3 p = glm::vec3(entity->transform[3]); return glm::vec2(p.x, p.z); }
     void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }
     void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation) { deepcore::add_mesh(entity_id, filename, position, rotation); }
     #pragma endregion Interface

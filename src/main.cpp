@@ -7,13 +7,14 @@
 
 bool is_player_attacking = false;
 
-bool collision_system()
+bool update()
 {
     glm::vec2 player_position = deep::get_camera_position_2d();
+    int living_enemies = 0;
     for(int i =0; i < deep::get_entity_count(); i++)
     {
-        deep::Entity entity = deep::get_entity(i);
-        if(entity.hurt_component)
+        deep::Entity* entity = deep::get_entity(i);
+        if(entity->is_active && entity->hurt_component)
         {
             glm::vec2 entity_position = deep::get_entity_position_2d(entity);
             if(glm::distance(player_position, entity_position) < 0.5f)
@@ -23,10 +24,18 @@ bool collision_system()
             }
             if(is_player_attacking && glm::distance(player_position, entity_position) < 1.75f)
             {
-                SDL_Log("You Win");
-                return true;
+                SDL_Log("You Hit");
+                entity->is_active = false;
+            } else {
+                living_enemies++;
             }
         }
+    }
+
+    if(living_enemies == 0)
+    {
+        SDL_Log("You Win");
+        return true;
     }
 
     is_player_attacking = false;
@@ -48,10 +57,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 
     int enemy_id = deep::create_entity();
     deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id).hurt_component = true;
+    deep::get_entity(enemy_id)->hurt_component = true;
     enemy_id = deep::create_entity();
     deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(5.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id).hurt_component = true;
+    deep::get_entity(enemy_id)->hurt_component = true;
 
     return SDL_APP_CONTINUE;
 }
@@ -72,7 +81,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         delta_time
     );
 
-    if(collision_system()) { return SDL_APP_SUCCESS; }
+    if(update()) { return SDL_APP_SUCCESS; }
 
     deep::render();
     return SDL_APP_CONTINUE;
