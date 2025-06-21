@@ -2,6 +2,9 @@
 
 #define CGLTF_IMPLEMENTATION
 
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlgpu3.h>
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -249,10 +252,8 @@ namespace deepcore
         }
         void destroy_window()
         {
-            // destroy the GPU device
+            SDL_ReleaseWindowFromGPUDevice(render_context.device, render_context.window);
             SDL_DestroyGPUDevice(render_context.device);
-
-            // destroy the window
             SDL_DestroyWindow(render_context.window);
         }
 
@@ -397,6 +398,35 @@ namespace deepcore
         void destroy_depth_buffer()
         {
             SDL_ReleaseGPUTexture(render_context.device, render_context.scene_depth_texture);
+        }
+
+        void setup_imgui()
+        {
+            float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+
+            // Setup Dear ImGui context
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+            io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+            // Setup Dear ImGui style
+            ImGui::StyleColorsDark();
+            //ImGui::StyleColorsLight();
+
+            // Setup scaling
+            ImGuiStyle& style = ImGui::GetStyle();
+            style.ScaleAllSizes(main_scale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+            style.FontScaleDpi = main_scale;        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
+
+            // Setup Platform/Renderer backends
+            ImGui_ImplSDL3_InitForSDLGPU(render_context.window);
+            ImGui_ImplSDLGPU3_InitInfo init_info = {};
+            init_info.Device = render_context.device;
+            init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(render_context.device, render_context.window);
+            init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
+            ImGui_ImplSDLGPU3_Init(&init_info);
         }
 
         SDL_GPUTexture* load_texture(const char *filename)
@@ -654,8 +684,61 @@ namespace deepcore
             }
         }
 
+        void render_ui()
+        {
+            // Start the Dear ImGui frame
+            ImGui_ImplSDLGPU3_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
+            bool show_demo_window = true;
+            ImGui::ShowDemoWindow(&show_demo_window);
+            ImGui::Render();
+            ImDrawData* draw_data = ImGui::GetDrawData();
+            const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
+
+            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device); // Acquire a GPU command buffer
+
+            SDL_GPUTexture* swapchain_texture;
+            SDL_AcquireGPUSwapchainTexture(command_buffer, render_context.window, &swapchain_texture, nullptr, nullptr); // Acquire a swapchain texture
+
+            if (swapchain_texture != nullptr && !is_minimized)
+            {
+                // This is mandatory: call ImGui_ImplSDLGPU3_PrepareDrawData() to upload the vertex/index buffer!
+                ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
+
+                // Setup and start a render pass
+                SDL_GPUColorTargetInfo target_info = {};
+                target_info.texture = swapchain_texture;
+                target_info.clear_color = {0/255.0f, 0/255.0f, 0/255.0f, 255/255.0f};
+                target_info.load_op = SDL_GPU_LOADOP_CLEAR;
+                target_info.store_op = SDL_GPU_STOREOP_STORE;
+                target_info.mip_level = 0;
+                target_info.layer_or_depth_plane = 0;
+                target_info.cycle = false;
+                SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr);
+
+                // Render ImGui
+                ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
+
+                SDL_EndGPURenderPass(render_pass);
+            }
+
+            // Submit the command buffer
+            SDL_SubmitGPUCommandBuffer(command_buffer);
+        }
+
         void render()
         {
+            // Start the Dear ImGui frame
+            ImGui_ImplSDLGPU3_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
+            bool show_demo_window = true;
+            ImGui::ShowDemoWindow(&show_demo_window);
+            ImGui::Render();
+            ImDrawData* draw_data = ImGui::GetDrawData();
+            const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
+
             // acquire the command buffer
             SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device);
 
@@ -671,6 +754,8 @@ namespace deepcore
                 SDL_SubmitGPUCommandBuffer(command_buffer);
                 return;
             }
+
+            ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
 
             // create the color target
             SDL_GPUColorTargetInfo color_target_info{};
@@ -749,11 +834,15 @@ namespace deepcore
                     }
                 }
 
+                ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
+
                 // end the render pass
                 SDL_EndGPURenderPass(render_pass);
 
             // submit the command buffer
             SDL_SubmitGPUCommandBuffer(command_buffer);
+
+            //render_ui();
         }
     #pragma endregion Renderer
 
@@ -773,6 +862,7 @@ namespace deepcore
             create_window();
             create_render_pipeline();
             create_depth_buffer();
+            setup_imgui();
             load_textures();
             camera_init(glm::vec3(0.0f, 0.0f, 0.0f));
         }
@@ -782,6 +872,11 @@ namespace deepcore
             destroy_textures();
             destroy_depth_buffer();
             destroy_render_pipeline();
+
+            ImGui_ImplSDL3_Shutdown();
+            ImGui_ImplSDLGPU3_Shutdown();
+            ImGui::DestroyContext();
+
             destroy_window();
         }
 

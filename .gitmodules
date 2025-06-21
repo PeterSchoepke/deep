@@ -10,3 +10,7 @@
 	path = vendor/cgltf
 	url = https://github.com/jkuhlmann/cgltf.git
 	branch = master
+[submodule "vendor/imgui"]
+	path = vendor/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = master
