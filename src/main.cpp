@@ -3,6 +3,9 @@
 #include <SDL3/SDL.h>
 #include <glm/glm/glm.hpp>
 #include "engine.h"
+#include <iostream>
+
+bool is_player_attacking = false;
 
 bool collision_system()
 {
@@ -18,8 +21,15 @@ bool collision_system()
                 SDL_Log("Game Over");
                 return true;
             }
+            if(is_player_attacking && glm::distance(player_position, entity_position) < 1.75f)
+            {
+                SDL_Log("You Win");
+                return true;
+            }
         }
     }
+
+    is_player_attacking = false;
     return false;
 }
 
@@ -81,6 +91,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         {
             case SDLK_ESCAPE:
                 return SDL_APP_SUCCESS;
+            default:
+                break;
+        }
+    }
+
+    if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+    {
+        switch (event->button.button)
+        {
+            case SDL_BUTTON_LEFT:
+                is_player_attacking = true;
+                break;
             default:
                 break;
         }
