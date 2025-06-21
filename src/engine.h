@@ -859,6 +859,12 @@ namespace deep
     int get_entity_count() { return deepcore::get_entity_count(); }
     Entity* get_entity(int entity_id) { return deepcore::get_entity(entity_id); }
     glm::vec2 get_entity_position_2d(Entity* entity) { glm::vec3 p = glm::vec3(entity->transform[3]); return glm::vec2(p.x, p.z); }
+    void set_entity_position_2d(Entity* entity, glm::vec2 new_entity_position) 
+    { 
+        glm::vec3 p = glm::vec3(entity->transform[3]);
+        glm::vec3 new_entity_position_3d = glm::vec3(new_entity_position.x, p.y, new_entity_position.y);
+        entity->transform[3] = glm::vec4(new_entity_position_3d, 1.0f);
+    }
     void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }
     void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation) { deepcore::add_mesh(entity_id, filename, position, rotation); }
     #pragma endregion Interface

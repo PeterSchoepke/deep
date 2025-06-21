@@ -7,7 +7,7 @@
 
 bool is_player_attacking = false;
 
-bool update()
+bool update(float delta_time)
 {
     glm::vec2 player_position = deep::get_camera_position_2d();
     int living_enemies = 0;
@@ -17,6 +17,12 @@ bool update()
         if(entity->is_active && entity->hurt_component)
         {
             glm::vec2 entity_position = deep::get_entity_position_2d(entity);
+            if(glm::distance(player_position, entity_position) < 14.0f)
+            {
+                glm::vec2 direction = glm::normalize(player_position - entity_position);
+                glm::vec2 new_entity_position = entity_position + direction * 3.0f * delta_time;
+                deep::set_entity_position_2d(entity, new_entity_position);
+            }
             if(glm::distance(player_position, entity_position) < 0.5f)
             {
                 SDL_Log("Game Over");
@@ -24,7 +30,6 @@ bool update()
             }
             if(is_player_attacking && glm::distance(player_position, entity_position) < 1.75f)
             {
-                SDL_Log("You Hit");
                 entity->is_active = false;
             } else {
                 living_enemies++;
@@ -46,7 +51,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     deep::init();
 
-    deep::set_camera_position(glm::vec3(0.0f, 1.8f, 6.0f));
+    deep::set_camera_position(glm::vec3(0.0f, 1.8f, 0.0f));
     deep::mouse_lock(true);
 
     deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, 10.0f));
@@ -56,10 +61,16 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::add_mesh(deep::create_entity(), "ressources/models/floor.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
     int enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(10.0f, 0.5f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     deep::get_entity(enemy_id)->hurt_component = true;
     enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(5.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(-10.0f, 0.5f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::get_entity(enemy_id)->hurt_component = true;
+    enemy_id = deep::create_entity();
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(10.0f, 0.5f, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::get_entity(enemy_id)->hurt_component = true;
+    enemy_id = deep::create_entity();
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(-10.0f, 0.5f, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     deep::get_entity(enemy_id)->hurt_component = true;
 
     return SDL_APP_CONTINUE;
@@ -81,7 +92,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         delta_time
     );
 
-    if(update()) { return SDL_APP_SUCCESS; }
+    if(update(delta_time)) { return SDL_APP_SUCCESS; }
 
     deep::render();
     return SDL_APP_CONTINUE;
