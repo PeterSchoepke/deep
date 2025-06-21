@@ -13,7 +13,7 @@ namespace deep
     struct Entity
     {
         int id;
-        bool is_active = true;
+        bool is_active = false;
         glm::mat4 transform = glm::mat4(1.0f);
 
         bool light_component = false;
@@ -801,6 +801,7 @@ namespace deepcore
             if(entities.count < entities.max_count)
             {
                 entities.data[entities.count].id = entities.count;
+                entities.data[entities.count].is_active = true;
                 entities.count += 1;
                 return entities.count-1;
             }
