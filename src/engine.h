@@ -3,10 +3,10 @@
 #define CGLTF_IMPLEMENTATION
 
 #include <SDL3/SDL.h>
-#include <glm/glm/glm.hpp>
-#include <glm/glm/gtc/matrix_transform.hpp>
-#include <glm/glm/gtc/type_ptr.hpp>
-#include <cgltf/cgltf.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <cgltf.h>
 
 namespace deep
 {
