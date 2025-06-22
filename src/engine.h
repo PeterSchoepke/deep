@@ -250,12 +250,6 @@ namespace deepcore
             render_context.device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
             SDL_ClaimWindowForGPUDevice(render_context.device, render_context.window);
         }
-        void destroy_window()
-        {
-            SDL_ReleaseWindowFromGPUDevice(render_context.device, render_context.window);
-            SDL_DestroyGPUDevice(render_context.device);
-            SDL_DestroyWindow(render_context.window);
-        }
 
         void create_render_pipeline()
         {
@@ -373,11 +367,6 @@ namespace deepcore
             SDL_ReleaseGPUShader(render_context.device, vertex_shader);
             SDL_ReleaseGPUShader(render_context.device, fragment_shader);
         }
-        void destroy_render_pipeline()
-        {
-            // release the pipeline
-            SDL_ReleaseGPUGraphicsPipeline(render_context.device, render_context.graphics_pipeline);        
-        }
 
         void create_depth_buffer()
         {
@@ -394,10 +383,6 @@ namespace deepcore
             texture_create_info.format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
             texture_create_info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
             render_context.scene_depth_texture = SDL_CreateGPUTexture(render_context.device, &texture_create_info);
-        }
-        void destroy_depth_buffer()
-        {
-            SDL_ReleaseGPUTexture(render_context.device, render_context.scene_depth_texture);
         }
 
         void setup_imgui()
@@ -509,14 +494,6 @@ namespace deepcore
             render_context.diffuse_map = load_texture("diffuse.bmp");
             render_context.specular_map = load_texture("specular.bmp");
             render_context.shininess_map = load_texture("shininess.bmp");
-        }
-        void destroy_textures()
-        {
-            // release the texture and sampler
-            SDL_ReleaseGPUTexture(render_context.device, render_context.diffuse_map);
-            SDL_ReleaseGPUTexture(render_context.device, render_context.specular_map);
-            SDL_ReleaseGPUTexture(render_context.device, render_context.shininess_map);
-            SDL_ReleaseGPUSampler(render_context.device, render_context.sampler);
         }
 
         void create_render_data(deep::Entity& render_data, std::vector<Vertex>& vertices, std::vector<Uint16>& indices)
@@ -807,16 +784,6 @@ namespace deepcore
     #pragma endregion Renderer
 
     #pragma region Game
-        void destroy_meshes()
-        {
-            for (int i = 0; i < entities.count; ++i) {
-                if(entities.data[i].mesh_component)
-                {
-                    destroy_render_data(entities.data[i]);
-                }
-            }
-        }
-
         void init()
         {
             create_window();
@@ -828,16 +795,30 @@ namespace deepcore
         }
         void cleanup()
         {
-            destroy_meshes();
-            destroy_textures();
-            destroy_depth_buffer();
-            destroy_render_pipeline();
+            for (int i = 0; i < entities.count; ++i) {
+                if(entities.data[i].mesh_component)
+                {
+                    SDL_ReleaseGPUBuffer(render_context.device, entities.data[i].vertex_buffer);
+                    SDL_ReleaseGPUBuffer(render_context.device, entities.data[i].index_buffer);
+                }
+            }            
+
+            SDL_ReleaseGPUTexture(render_context.device, render_context.diffuse_map);
+            SDL_ReleaseGPUTexture(render_context.device, render_context.specular_map);
+            SDL_ReleaseGPUTexture(render_context.device, render_context.shininess_map);
+            SDL_ReleaseGPUSampler(render_context.device, render_context.sampler);
+
+            SDL_ReleaseGPUTexture(render_context.device, render_context.scene_depth_texture);
+
+            SDL_ReleaseGPUGraphicsPipeline(render_context.device, render_context.graphics_pipeline); 
 
             ImGui_ImplSDL3_Shutdown();
             ImGui_ImplSDLGPU3_Shutdown();
             ImGui::DestroyContext();
 
-            destroy_window();
+            SDL_ReleaseWindowFromGPUDevice(render_context.device, render_context.window);
+            SDL_DestroyGPUDevice(render_context.device);
+            SDL_DestroyWindow(render_context.window);
         }
 
         double last_frame_time = 0;
