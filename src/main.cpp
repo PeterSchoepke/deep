@@ -2,56 +2,78 @@
 #include <SDL3/SDL_main.h>
 #include "engine.h"
 
+enum UI_State 
+{
+    Running,
+    Lose,
+    Win
+};
+
 bool is_player_attacking = false;
 int enemies_left = 5;
+UI_State ui_state = UI_State::Running;
 
-bool update(float delta_time)
+void update(float delta_time)
 {
-    glm::vec2 player_position = deep::get_camera_position_2d();
-    int living_enemies = 0;
-    for(int i =0; i < deep::get_entity_count(); i++)
+    if(ui_state == UI_State::Running)
     {
-        deep::Entity* entity = deep::get_entity(i);
-        if(entity->is_active && entity->hurt_component)
+        glm::vec2 player_position = deep::get_camera_position_2d();
+        int living_enemies = 0;
+        for(int i =0; i < deep::get_entity_count(); i++)
         {
-            glm::vec2 entity_position = deep::get_entity_position_2d(entity);
-            if(glm::distance(player_position, entity_position) < 14.0f)
+            deep::Entity* entity = deep::get_entity(i);
+            if(entity->is_active && entity->hurt_component)
             {
-                glm::vec2 direction = glm::normalize(player_position - entity_position);
-                glm::vec2 new_entity_position = entity_position + direction * 3.0f * delta_time;
-                deep::set_entity_position_2d(entity, new_entity_position);
-            }
-            if(glm::distance(player_position, entity_position) < 0.5f)
-            {
-                SDL_Log("Game Over");
-                return true;
-            }
-            if(is_player_attacking && glm::distance(player_position, entity_position) < 1.75f)
-            {
-                entity->is_active = false;
-            } else {
-                living_enemies++;
+                glm::vec2 entity_position = deep::get_entity_position_2d(entity);
+                if(glm::distance(player_position, entity_position) < 14.0f)
+                {
+                    glm::vec2 direction = glm::normalize(player_position - entity_position);
+                    glm::vec2 new_entity_position = entity_position + direction * 3.0f * delta_time;
+                    deep::set_entity_position_2d(entity, new_entity_position);
+                }
+                if(glm::distance(player_position, entity_position) < 0.5f)
+                {
+                    ui_state = UI_State::Lose;
+                }
+                if(is_player_attacking && glm::distance(player_position, entity_position) < 1.75f)
+                {
+                    entity->is_active = false;
+                } else {
+                    living_enemies++;
+                }
             }
         }
-    }
 
-    enemies_left = living_enemies;
-    if(living_enemies == 0)
-    {
-        SDL_Log("You Win");
-        return true;
-    }
+        enemies_left = living_enemies;
+        if(living_enemies == 0)
+        {
+            ui_state = UI_State::Win;
+        }
 
-    is_player_attacking = false;
-    return false;
+        is_player_attacking = false;
+    }
 }
 
 void update_ui(float delta_time)
 {
-    ImGui::Begin("HUD");    
-    //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", delta_time * 1000.0f, 1000.0f / (delta_time * 1000.0f)); 
-    ImGui::Text("Enemies Left: %d", enemies_left);
-    ImGui::End();
+    switch (ui_state) {
+        case Running:
+            ImGui::Begin("HUD");
+            //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", delta_time * 1000.0f, 1000.0f / (delta_time * 1000.0f)); 
+            ImGui::Text("Enemies Left: %d", enemies_left);
+            ImGui::End();
+            break;
+        case Win:
+            ImGui::Begin("HUD");
+            ImGui::Text("You Win");
+            ImGui::End();
+            break;
+        case Lose:
+            ImGui::Begin("HUD");
+            ImGui::Text("Game Over");
+            ImGui::End();
+            break;
+    }
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
@@ -59,7 +81,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::init();
 
     deep::set_camera_position(glm::vec3(0.0f, 1.8f, 0.0f));
-    deep::mouse_lock(true);
 
     deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, 10.0f));
     deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, 10.0f));
@@ -89,20 +110,24 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     const bool* KEYBOARD_STATE = SDL_GetKeyboardState(NULL);
 
-    deep::camera_process_keyboard(
-        KEYBOARD_STATE[SDL_SCANCODE_W],
-        KEYBOARD_STATE[SDL_SCANCODE_S],
-        KEYBOARD_STATE[SDL_SCANCODE_A],
-        KEYBOARD_STATE[SDL_SCANCODE_D],
-        KEYBOARD_STATE[SDL_SCANCODE_SPACE],
-        KEYBOARD_STATE[SDL_SCANCODE_LSHIFT],
-        delta_time
-    );
+    if(ui_state == UI_State::Running)
+    {
+        deep::camera_process_keyboard(
+            KEYBOARD_STATE[SDL_SCANCODE_W],
+            KEYBOARD_STATE[SDL_SCANCODE_S],
+            KEYBOARD_STATE[SDL_SCANCODE_A],
+            KEYBOARD_STATE[SDL_SCANCODE_D],
+            KEYBOARD_STATE[SDL_SCANCODE_SPACE],
+            KEYBOARD_STATE[SDL_SCANCODE_LSHIFT],
+            delta_time
+        );
+    }    
 
-    if(update(delta_time)) { return SDL_APP_SUCCESS; }
-
+    deep::mouse_lock(ui_state == UI_State::Running);
+    update(delta_time);
     update_ui(delta_time);
     deep::render();
+
     return SDL_APP_CONTINUE;
 }
 
@@ -140,9 +165,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
     if (event->type == SDL_EVENT_MOUSE_MOTION)
     {
-        float x_offset = static_cast<float>(event->motion.xrel);
-        float y_offset = static_cast<float>(event->motion.yrel*-1);
-        deep::camera_process_mouse_movement(x_offset, y_offset, true);
+        if(ui_state == UI_State::Running)
+        {
+            float x_offset = static_cast<float>(event->motion.xrel);
+            float y_offset = static_cast<float>(event->motion.yrel*-1);
+            deep::camera_process_mouse_movement(x_offset, y_offset, true);
+        } 
     }
 
     return SDL_APP_CONTINUE;
