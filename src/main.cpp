@@ -3,7 +3,7 @@
 #include "engine.h"
 
 bool is_player_attacking = false;
-bool show_demo_window = true;
+int enemies_left = 5;
 
 bool update(float delta_time)
 {
@@ -35,6 +35,7 @@ bool update(float delta_time)
         }
     }
 
+    enemies_left = living_enemies;
     if(living_enemies == 0)
     {
         SDL_Log("You Win");
@@ -45,9 +46,12 @@ bool update(float delta_time)
     return false;
 }
 
-void update_ui()
+void update_ui(float delta_time)
 {
-    ImGui::ShowDemoWindow(&show_demo_window);
+    ImGui::Begin("HUD");    
+    //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", delta_time * 1000.0f, 1000.0f / (delta_time * 1000.0f)); 
+    ImGui::Text("Enemies Left: %d", enemies_left);
+    ImGui::End();
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
@@ -55,7 +59,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::init();
 
     deep::set_camera_position(glm::vec3(0.0f, 1.8f, 0.0f));
-    //deep::mouse_lock(true);
+    deep::mouse_lock(true);
 
     deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, 10.0f));
     deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, 10.0f));
@@ -97,7 +101,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     if(update(delta_time)) { return SDL_APP_SUCCESS; }
 
-    update_ui();
+    update_ui(delta_time);
     deep::render();
     return SDL_APP_CONTINUE;
 }
