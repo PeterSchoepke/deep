@@ -11,7 +11,7 @@ enum UI_State
 
 bool is_player_attacking = false;
 int enemies_left = 5;
-UI_State ui_state = UI_State::Lose;
+UI_State ui_state = UI_State::Running;
 
 void load_scene()
 {

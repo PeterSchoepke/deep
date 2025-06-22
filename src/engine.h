@@ -675,6 +675,8 @@ namespace deepcore
             // acquire the command buffer
             SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device);
 
+            ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
+
             // get the swapchain texture
             SDL_GPUTexture* swapchain_texture;
             Uint32 width, height;
@@ -765,12 +767,9 @@ namespace deepcore
                     }
                 }
 
-                // end the render pass
-                SDL_EndGPURenderPass(render_pass);
-
-                ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
-                render_pass = SDL_BeginGPURenderPass(command_buffer, &color_target_info, 1, nullptr);
                 ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
+
+                // end the render pass
                 SDL_EndGPURenderPass(render_pass);
 
             // submit the command buffer
