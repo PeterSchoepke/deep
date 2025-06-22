@@ -427,6 +427,11 @@ namespace deepcore
             init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(render_context.device, render_context.window);
             init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
             ImGui_ImplSDLGPU3_Init(&init_info);
+
+            // Start the Dear ImGui frame
+            ImGui_ImplSDLGPU3_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
         }
 
         SDL_GPUTexture* load_texture(const char *filename)
@@ -684,57 +689,8 @@ namespace deepcore
             }
         }
 
-        void render_ui()
-        {
-            // Start the Dear ImGui frame
-            ImGui_ImplSDLGPU3_NewFrame();
-            ImGui_ImplSDL3_NewFrame();
-            ImGui::NewFrame();
-            bool show_demo_window = true;
-            ImGui::ShowDemoWindow(&show_demo_window);
-            ImGui::Render();
-            ImDrawData* draw_data = ImGui::GetDrawData();
-            const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
-
-            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device); // Acquire a GPU command buffer
-
-            SDL_GPUTexture* swapchain_texture;
-            SDL_AcquireGPUSwapchainTexture(command_buffer, render_context.window, &swapchain_texture, nullptr, nullptr); // Acquire a swapchain texture
-
-            if (swapchain_texture != nullptr && !is_minimized)
-            {
-                // This is mandatory: call ImGui_ImplSDLGPU3_PrepareDrawData() to upload the vertex/index buffer!
-                ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
-
-                // Setup and start a render pass
-                SDL_GPUColorTargetInfo target_info = {};
-                target_info.texture = swapchain_texture;
-                target_info.clear_color = {0/255.0f, 0/255.0f, 0/255.0f, 255/255.0f};
-                target_info.load_op = SDL_GPU_LOADOP_CLEAR;
-                target_info.store_op = SDL_GPU_STOREOP_STORE;
-                target_info.mip_level = 0;
-                target_info.layer_or_depth_plane = 0;
-                target_info.cycle = false;
-                SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr);
-
-                // Render ImGui
-                ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
-
-                SDL_EndGPURenderPass(render_pass);
-            }
-
-            // Submit the command buffer
-            SDL_SubmitGPUCommandBuffer(command_buffer);
-        }
-
         void render()
         {
-            // Start the Dear ImGui frame
-            ImGui_ImplSDLGPU3_NewFrame();
-            ImGui_ImplSDL3_NewFrame();
-            ImGui::NewFrame();
-            bool show_demo_window = true;
-            ImGui::ShowDemoWindow(&show_demo_window);
             ImGui::Render();
             ImDrawData* draw_data = ImGui::GetDrawData();
             const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
@@ -842,7 +798,10 @@ namespace deepcore
             // submit the command buffer
             SDL_SubmitGPUCommandBuffer(command_buffer);
 
-            //render_ui();
+            // Start the Dear ImGui frame
+            ImGui_ImplSDLGPU3_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
         }
     #pragma endregion Renderer
 
