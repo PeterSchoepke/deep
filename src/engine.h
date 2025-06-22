@@ -850,6 +850,27 @@ namespace deepcore
 
         void mouse_lock(bool lock) { SDL_SetWindowRelativeMouseMode(render_context.window, lock); }
 
+        void clear_scene() {
+            camera_init(glm::vec3(0.0f, 0.0f, 0.0f));
+
+            for (int i = 0; i < entities.count; ++i) {
+                if(entities.data[i].mesh_component)
+                {
+                    destroy_render_data(entities.data[i]);
+                }
+                entities.data[i].is_active = false;
+                entities.data[i].transform = glm::mat4(1.0f);
+
+                entities.data[i].light_component = false;
+                entities.data[i].light_position = glm::vec3(0.0f, 0.0f, 0.0f);
+
+                entities.data[i].mesh_component = false;
+
+                entities.data[i].hurt_component = false;
+            }
+            entities.count = 0;
+        }
+
         int create_entity()
         {
             if(entities.count < entities.max_count)
@@ -910,6 +931,7 @@ namespace deep
     void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) { deepcore::camera_process_keyboard(forward, back, left, right, up, down, delta_time); }
     void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch) { deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch); }
 
+    void clear_scene() { deepcore::clear_scene(); }
     int create_entity() { return deepcore::create_entity(); }
     int get_entity_count() { return deepcore::get_entity_count(); }
     Entity* get_entity(int entity_id) { return deepcore::get_entity(entity_id); }

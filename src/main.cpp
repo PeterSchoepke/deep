@@ -13,6 +13,30 @@ bool is_player_attacking = false;
 int enemies_left = 5;
 UI_State ui_state = UI_State::Running;
 
+void load_scene()
+{
+    deep::set_camera_position(glm::vec3(0.0f, 1.8f, 0.0f));
+
+    deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, 10.0f));
+    deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, 10.0f));
+    deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, -10.0f));
+    deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, -10.0f));
+    deep::add_mesh(deep::create_entity(), "ressources/models/floor.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+
+    int enemy_id = deep::create_entity();
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(10.0f, 0.5f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::get_entity(enemy_id)->hurt_component = true;
+    enemy_id = deep::create_entity();
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(-10.0f, 0.5f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::get_entity(enemy_id)->hurt_component = true;
+    enemy_id = deep::create_entity();
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(10.0f, 0.5f, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::get_entity(enemy_id)->hurt_component = true;
+    enemy_id = deep::create_entity();
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(-10.0f, 0.5f, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::get_entity(enemy_id)->hurt_component = true;
+}
+
 void update(float delta_time)
 {
     if(ui_state == UI_State::Running)
@@ -54,6 +78,13 @@ void update(float delta_time)
     }
 }
 
+void restart()
+{
+    deep::clear_scene();
+    load_scene();
+    ui_state = UI_State::Running;
+}
+
 void update_ui(float delta_time)
 {
     switch (ui_state) {
@@ -66,11 +97,15 @@ void update_ui(float delta_time)
         case Win:
             ImGui::Begin("HUD");
             ImGui::Text("You Win");
+            if (ImGui::Button("Restart"))
+                restart();
             ImGui::End();
             break;
         case Lose:
             ImGui::Begin("HUD");
             ImGui::Text("Game Over");
+            if (ImGui::Button("Restart"))
+                restart();
             ImGui::End();
             break;
     }
@@ -80,26 +115,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     deep::init();
 
-    deep::set_camera_position(glm::vec3(0.0f, 1.8f, 0.0f));
-
-    deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, 10.0f));
-    deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, 10.0f));
-    deep::add_light(deep::create_entity(), glm::vec3(10.0f, 4.0f, -10.0f));
-    deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, -10.0f));
-    deep::add_mesh(deep::create_entity(), "ressources/models/floor.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-
-    int enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(10.0f, 0.5f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;
-    enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(-10.0f, 0.5f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;
-    enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(10.0f, 0.5f, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;
-    enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(-10.0f, 0.5f, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;
+    load_scene();
 
     return SDL_APP_CONTINUE;
 }
