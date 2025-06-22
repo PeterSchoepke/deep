@@ -133,8 +133,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             KEYBOARD_STATE[SDL_SCANCODE_S],
             KEYBOARD_STATE[SDL_SCANCODE_A],
             KEYBOARD_STATE[SDL_SCANCODE_D],
-            KEYBOARD_STATE[SDL_SCANCODE_SPACE],
-            KEYBOARD_STATE[SDL_SCANCODE_LSHIFT],
+            false, //KEYBOARD_STATE[SDL_SCANCODE_SPACE],
+            false, //KEYBOARD_STATE[SDL_SCANCODE_LSHIFT],
             delta_time
         );
     }    
