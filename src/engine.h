@@ -44,7 +44,6 @@ namespace deepcore
             SDL_GPUTexture* diffuse_map;
             SDL_GPUTexture* specular_map;
             SDL_GPUTexture* shininess_map;
-            bool is_sampler_created = false;
             SDL_GPUSampler* sampler;
             SDL_GPUTexture* scene_depth_texture;
         };
@@ -427,20 +426,7 @@ namespace deepcore
                 {
                     SDL_Log("Could not load image data!");
                     // FIXME handle image not found
-                }
-
-            if(!render_context.is_sampler_created)
-            {
-                SDL_GPUSamplerCreateInfo sampler_create_info{};
-                sampler_create_info.min_filter = SDL_GPU_FILTER_NEAREST;
-                sampler_create_info.mag_filter = SDL_GPU_FILTER_NEAREST;
-                sampler_create_info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
-                sampler_create_info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-                sampler_create_info.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-                sampler_create_info.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-                render_context.sampler = SDL_CreateGPUSampler(render_context.device, &sampler_create_info);
-                render_context.is_sampler_created = true;
-            }            
+                }          
 
             SDL_GPUTextureCreateInfo texture_create_info{};
             texture_create_info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -496,6 +482,15 @@ namespace deepcore
         }
         void load_textures()
         {
+            SDL_GPUSamplerCreateInfo sampler_create_info{};
+            sampler_create_info.min_filter = SDL_GPU_FILTER_NEAREST;
+            sampler_create_info.mag_filter = SDL_GPU_FILTER_NEAREST;
+            sampler_create_info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
+            sampler_create_info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+            sampler_create_info.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+            sampler_create_info.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+            render_context.sampler = SDL_CreateGPUSampler(render_context.device, &sampler_create_info);
+
             render_context.diffuse_map = load_texture("diffuse.bmp");
             render_context.specular_map = load_texture("specular.bmp");
             render_context.shininess_map = load_texture("shininess.bmp");
