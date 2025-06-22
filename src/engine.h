@@ -711,8 +711,6 @@ namespace deepcore
                 return;
             }
 
-            ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
-
             // create the color target
             SDL_GPUColorTargetInfo color_target_info{};
             color_target_info.clear_color = {0/255.0f, 0/255.0f, 0/255.0f, 255/255.0f};
@@ -790,9 +788,12 @@ namespace deepcore
                     }
                 }
 
-                ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
-
                 // end the render pass
+                SDL_EndGPURenderPass(render_pass);
+
+                ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
+                render_pass = SDL_BeginGPURenderPass(command_buffer, &color_target_info, 1, nullptr);
+                ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
                 SDL_EndGPURenderPass(render_pass);
 
             // submit the command buffer
