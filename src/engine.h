@@ -785,6 +785,8 @@ namespace deepcore
     #pragma region Game
         void init()
         {
+            SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+
             create_window();
             create_render_pipeline();
             create_depth_buffer();
@@ -926,4 +928,44 @@ namespace deep
     void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }
     void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation) { deepcore::add_mesh(entity_id, filename, position, rotation); }
     #pragma endregion Interface
+
+    #pragma region AudioTest
+    SDL_AudioStream *stream = NULL;
+    Uint8 *wav_data = NULL;
+    Uint32 wav_data_len = 0;
+    bool init_audio()
+    {
+        SDL_AudioSpec spec;
+        char *wav_path = NULL;
+        /* Load the .wav file from wherever the app is being run from. */
+        SDL_asprintf(&wav_path, "ressources/sound/attack.wav");  /* allocate a string of the full file path */
+        if (!SDL_LoadWAV(wav_path, &spec, &wav_data, &wav_data_len)) {
+            SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
+            return false;
+        }
+
+        SDL_free(wav_path);  /* done with this string. */
+
+        stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+        if (!stream) {
+            SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+            return false;
+        }
+
+        /* SDL_OpenAudioDeviceStream starts the device paused. You have to tell it to start! */
+        SDL_ResumeAudioStreamDevice(stream);
+
+        return true;
+    }
+
+    void add_audio()
+    {
+        if (SDL_GetAudioStreamQueued(stream) < (int)wav_data_len) {
+            /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
+            SDL_PutAudioStreamData(stream, wav_data, wav_data_len);
+        }
+    }
+
+
+    #pragma endregion AudioTest
 }

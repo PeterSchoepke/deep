@@ -115,6 +115,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     deep::init();
 
+    deep::init_audio();
+
     load_scene();
 
     return SDL_APP_CONTINUE;
@@ -122,6 +124,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
+    deep::add_audio();
+
     double delta_time = deep::get_delta_time();
 
     const bool* KEYBOARD_STATE = SDL_GetKeyboardState(NULL);
