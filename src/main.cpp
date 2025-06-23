@@ -59,7 +59,7 @@ void update(float delta_time)
                 {
                     ui_state = UI_State::Lose;
                 }
-                if(is_player_attacking && glm::distance(player_position, entity_position) < 1.75f)
+                if(is_player_attacking && glm::distance(player_position, entity_position) < 4.0f)
                 {
                     entity->is_active = false;
                 } else {
