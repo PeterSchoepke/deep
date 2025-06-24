@@ -124,8 +124,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    deep::add_audio();
-
     double delta_time = deep::get_delta_time();
 
     const bool* KEYBOARD_STATE = SDL_GetKeyboardState(NULL);
@@ -177,6 +175,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         {
             case SDL_BUTTON_LEFT:
                 is_player_attacking = true;
+                deep::add_audio();
                 break;
             default:
                 break;
