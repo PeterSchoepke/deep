@@ -13,7 +13,8 @@ enum Audio
 {
     Attack,
     Hit,
-    Hurt
+    Hurt,
+    Success
 };
 
 bool is_player_attacking = false;
@@ -81,6 +82,7 @@ void update(float delta_time)
         if(living_enemies == 0)
         {
             ui_state = UI_State::Win;
+            deep::play_sound(Audio::Success);
         }
 
         is_player_attacking = false;
@@ -127,6 +129,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::load_sound("attack.wav");
     deep::load_sound("hit.wav");
     deep::load_sound("hurt.wav");
+    deep::load_sound("win.wav");
     deep::load_music("bg.wav");
 
     load_scene();
