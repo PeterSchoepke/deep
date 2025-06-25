@@ -12,7 +12,8 @@ enum UI_State
 enum Audio 
 {
     Attack,
-    Hit
+    Hit,
+    Hurt
 };
 
 bool is_player_attacking = false;
@@ -64,6 +65,7 @@ void update(float delta_time)
                 if(glm::distance(player_position, entity_position) < 0.5f)
                 {
                     ui_state = UI_State::Lose;
+                    deep::play_sound(Audio::Hurt);
                 }
                 if(is_player_attacking && glm::distance(player_position, entity_position) < 4.0f)
                 {
@@ -124,6 +126,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 
     deep::load_sound("attack.wav");
     deep::load_sound("hit.wav");
+    deep::load_sound("hurt.wav");
     deep::load_music("bg.wav");
 
     load_scene();
