@@ -102,6 +102,20 @@ namespace deepcore
             glm::mat4 projection;
         };
 
+        struct Sound {
+            Uint8 *wav_data;
+            Uint32 wav_data_len;
+            SDL_AudioStream *stream;
+        };
+
+        struct Sounds
+        {
+            Sound data[10];
+            int max_count = 10;
+            int count = 0;
+            SDL_AudioDeviceID audio_device = 0;
+        };
+
         struct Entities
         {
             deep::Entity data[10];
@@ -113,6 +127,7 @@ namespace deepcore
     #pragma region Globals
         Render_Context render_context{};
         Entities entities{};
+        Sounds sounds{};
         Camera camera{};
     #pragma endregion Globals
 
@@ -383,6 +398,14 @@ namespace deepcore
             texture_create_info.format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
             texture_create_info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
             render_context.scene_depth_texture = SDL_CreateGPUTexture(render_context.device, &texture_create_info);
+        }
+
+        void init_sound()
+        {
+            sounds.audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+            if (sounds.audio_device == 0) {
+                SDL_Log("Couldn't open audio device: %s", SDL_GetError());
+            }
         }
 
         void setup_imgui()
@@ -790,6 +813,7 @@ namespace deepcore
             create_window();
             create_render_pipeline();
             create_depth_buffer();
+            init_sound();
             setup_imgui();
             load_textures();
             camera_init(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -897,6 +921,49 @@ namespace deepcore
         }
         
         #pragma endregion Game
+
+        int load_audio(const char *filename)
+        {
+            if(sounds.count < sounds.max_count)
+            {
+                int i = sounds.count;
+                SDL_AudioSpec spec;
+                char *wav_path = NULL;
+
+                /* Load the .wav files from wherever the app is being run from. */
+                SDL_asprintf(&wav_path, "ressources/sound/%s", filename);  /* allocate a string of the full file path */
+                if (!SDL_LoadWAV(wav_path, &spec, &sounds.data[i].wav_data, &sounds.data[i].wav_data_len)) {
+                    SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
+                    return false;
+                }
+
+                /* Create an audio stream. Set the source format to the wav's format (what
+                we'll input), leave the dest format NULL here (it'll change to what the
+                device wants once we bind it). */
+                sounds.data[i].stream = SDL_CreateAudioStream(&spec, NULL);
+                if (!sounds.data[i].stream) {
+                    SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+                } else if (!SDL_BindAudioStream(sounds.audio_device, sounds.data[i].stream)) {  /* once bound, it'll start playing when there is data available! */
+                    SDL_Log("Failed to bind '%s' stream to device: %s", filename, SDL_GetError());
+                }
+
+                SDL_free(wav_path);  /* done with this string. */
+                
+                sounds.count += 1;
+                return sounds.count-1;
+            }
+            return -1;
+
+            
+        }
+
+        void play_audio(int id)
+        {
+            if (SDL_GetAudioStreamQueued(sounds.data[id].stream) < (int)sounds.data[id].wav_data_len) {
+                /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
+                SDL_PutAudioStreamData(sounds.data[id].stream, sounds.data[id].wav_data, sounds.data[id].wav_data_len);
+            }
+        }
 }
 
 namespace deep
@@ -927,45 +994,8 @@ namespace deep
     }
     void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }
     void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation) { deepcore::add_mesh(entity_id, filename, position, rotation); }
+    
+    int load_audio(const char *filename) { return deepcore::load_audio(filename); }
+    void play_audio(int id) { deepcore::play_audio(id); }
     #pragma endregion Interface
-
-    #pragma region AudioTest
-    SDL_AudioStream *stream = NULL;
-    Uint8 *wav_data = NULL;
-    Uint32 wav_data_len = 0;
-    bool init_audio()
-    {
-        SDL_AudioSpec spec;
-        char *wav_path = NULL;
-        /* Load the .wav file from wherever the app is being run from. */
-        SDL_asprintf(&wav_path, "ressources/sound/attack.wav");  /* allocate a string of the full file path */
-        if (!SDL_LoadWAV(wav_path, &spec, &wav_data, &wav_data_len)) {
-            SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
-            return false;
-        }
-
-        SDL_free(wav_path);  /* done with this string. */
-
-        stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
-        if (!stream) {
-            SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
-            return false;
-        }
-
-        /* SDL_OpenAudioDeviceStream starts the device paused. You have to tell it to start! */
-        SDL_ResumeAudioStreamDevice(stream);
-
-        return true;
-    }
-
-    void add_audio()
-    {
-        if (SDL_GetAudioStreamQueued(stream) < (int)wav_data_len) {
-            /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
-            SDL_PutAudioStreamData(stream, wav_data, wav_data_len);
-        }
-    }
-
-
-    #pragma endregion AudioTest
 }
