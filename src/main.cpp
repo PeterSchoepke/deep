@@ -68,7 +68,7 @@ void update(float delta_time)
                 if(is_player_attacking && glm::distance(player_position, entity_position) < 4.0f)
                 {
                     entity->is_active = false;
-                    deep::play_audio(Audio::Hit);
+                    deep::play_sound(Audio::Hit);
                 } else {
                     living_enemies++;
                 }
@@ -122,8 +122,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     deep::init();
 
-    deep::load_audio("attack.wav");
-    deep::load_audio("hit.wav");
+    deep::load_sound("attack.wav");
+    deep::load_sound("hit.wav");
+    deep::load_music("bg.wav");
 
     load_scene();
 
@@ -152,7 +153,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     deep::mouse_lock(ui_state == UI_State::Running);
     update(delta_time);
     update_ui(delta_time);
-    deep::render();
+    deep::update();
 
     return SDL_APP_CONTINUE;
 }
@@ -182,8 +183,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         switch (event->button.button)
         {
             case SDL_BUTTON_LEFT:
-                is_player_attacking = true;
-                deep::play_audio(Audio::Attack);
+                if(ui_state == UI_State::Running)
+                {
+                    is_player_attacking = true;
+                    deep::play_sound(Audio::Attack);
+                }
                 break;
             default:
                 break;

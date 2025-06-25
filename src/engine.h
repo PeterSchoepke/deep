@@ -108,9 +108,10 @@ namespace deepcore
             SDL_AudioStream *stream;
         };
 
-        struct Sounds
+        struct Sound_System
         {
             Sound data[10];
+            Sound music;
             int max_count = 10;
             int count = 0;
             SDL_AudioDeviceID audio_device = 0;
@@ -127,7 +128,7 @@ namespace deepcore
     #pragma region Globals
         Render_Context render_context{};
         Entities entities{};
-        Sounds sounds{};
+        Sound_System sound_system{};
         Camera camera{};
     #pragma endregion Globals
 
@@ -402,8 +403,8 @@ namespace deepcore
 
         void init_sound()
         {
-            sounds.audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
-            if (sounds.audio_device == 0) {
+            sound_system.audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+            if (sound_system.audio_device == 0) {
                 SDL_Log("Couldn't open audio device: %s", SDL_GetError());
             }
         }
@@ -922,46 +923,75 @@ namespace deepcore
         
         #pragma endregion Game
 
-        int load_audio(const char *filename)
+        void load_music(const char *filename)
+        {            
+            SDL_AudioSpec spec;
+            char *wav_path = NULL;
+
+            /* Load the .wav files from wherever the app is being run from. */
+            SDL_asprintf(&wav_path, "ressources/music/%s", filename);  /* allocate a string of the full file path */
+            if (!SDL_LoadWAV(wav_path, &spec, &sound_system.music.wav_data, &sound_system.music.wav_data_len)) {
+                SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
+            }
+
+            /* Create an audio stream. Set the source format to the wav's format (what
+            we'll input), leave the dest format NULL here (it'll change to what the
+            device wants once we bind it). */
+            sound_system.music.stream = SDL_CreateAudioStream(&spec, NULL);
+            if (!sound_system.music.stream) {
+                SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+            } else if (!SDL_BindAudioStream(sound_system.audio_device, sound_system.music.stream)) {  /* once bound, it'll start playing when there is data available! */
+                SDL_Log("Failed to bind '%s' stream to device: %s", filename, SDL_GetError());
+            }
+
+            SDL_free(wav_path);  /* done with this string. */            
+        }
+
+        int load_sound(const char *filename)
         {
-            if(sounds.count < sounds.max_count)
+            if(sound_system.count < sound_system.max_count)
             {
-                int i = sounds.count;
+                int i = sound_system.count;
                 SDL_AudioSpec spec;
                 char *wav_path = NULL;
 
                 /* Load the .wav files from wherever the app is being run from. */
                 SDL_asprintf(&wav_path, "ressources/sound/%s", filename);  /* allocate a string of the full file path */
-                if (!SDL_LoadWAV(wav_path, &spec, &sounds.data[i].wav_data, &sounds.data[i].wav_data_len)) {
+                if (!SDL_LoadWAV(wav_path, &spec, &sound_system.data[i].wav_data, &sound_system.data[i].wav_data_len)) {
                     SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
-                    return false;
                 }
 
                 /* Create an audio stream. Set the source format to the wav's format (what
                 we'll input), leave the dest format NULL here (it'll change to what the
                 device wants once we bind it). */
-                sounds.data[i].stream = SDL_CreateAudioStream(&spec, NULL);
-                if (!sounds.data[i].stream) {
+                sound_system.data[i].stream = SDL_CreateAudioStream(&spec, NULL);
+                if (!sound_system.data[i].stream) {
                     SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
-                } else if (!SDL_BindAudioStream(sounds.audio_device, sounds.data[i].stream)) {  /* once bound, it'll start playing when there is data available! */
+                } else if (!SDL_BindAudioStream(sound_system.audio_device, sound_system.data[i].stream)) {  /* once bound, it'll start playing when there is data available! */
                     SDL_Log("Failed to bind '%s' stream to device: %s", filename, SDL_GetError());
                 }
 
                 SDL_free(wav_path);  /* done with this string. */
                 
-                sounds.count += 1;
-                return sounds.count-1;
+                sound_system.count += 1;
+                return sound_system.count-1;
             }
-            return -1;
-
-            
+            return -1;            
         }
 
-        void play_audio(int id)
+        void play_sound(int id)
         {
-            if (SDL_GetAudioStreamQueued(sounds.data[id].stream) < (int)sounds.data[id].wav_data_len) {
+            if (SDL_GetAudioStreamQueued(sound_system.data[id].stream) < (int)sound_system.data[id].wav_data_len) {
                 /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
-                SDL_PutAudioStreamData(sounds.data[id].stream, sounds.data[id].wav_data, sounds.data[id].wav_data_len);
+                SDL_PutAudioStreamData(sound_system.data[id].stream, sound_system.data[id].wav_data, sound_system.data[id].wav_data_len);
+            }
+        }
+
+        void update_music()
+        {
+            if (SDL_GetAudioStreamQueued(sound_system.music.stream) < (int)sound_system.music.wav_data_len) {
+                /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
+                SDL_PutAudioStreamData(sound_system.music.stream, sound_system.music.wav_data, sound_system.music.wav_data_len);
             }
         }
 }
@@ -971,7 +1001,7 @@ namespace deep
     #pragma region Interface
     void init() { deepcore::init(); }
     void cleanup(){ deepcore::cleanup(); }
-    void render(){ deepcore::render(); }
+    void update(){ deepcore::update_music(); deepcore::render(); }
     
     double get_delta_time() { return deepcore::get_delta_time(); }
     void mouse_lock(bool lock) { deepcore::mouse_lock(lock); }
@@ -995,7 +1025,8 @@ namespace deep
     void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }
     void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation) { deepcore::add_mesh(entity_id, filename, position, rotation); }
     
-    int load_audio(const char *filename) { return deepcore::load_audio(filename); }
-    void play_audio(int id) { deepcore::play_audio(id); }
+    void load_music(const char *filename) { deepcore::load_music(filename); }
+    int load_sound(const char *filename) { return deepcore::load_sound(filename); }
+    void play_sound(int id) { deepcore::play_sound(id); }
     #pragma endregion Interface
 }
