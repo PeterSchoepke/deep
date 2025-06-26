@@ -689,14 +689,8 @@ namespace deepcore
 
         void render()
         {
-            ImGui::Render();
-            ImDrawData* draw_data = ImGui::GetDrawData();
-            const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
-
             // acquire the command buffer
             SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(render_context.device);
-
-            ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
 
             // get the swapchain texture
             SDL_GPUTexture* swapchain_texture;
@@ -788,10 +782,24 @@ namespace deepcore
                     }
                 }
 
-                ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
-
                 // end the render pass
                 SDL_EndGPURenderPass(render_pass);
+
+                // ImGui Rendering Pass (No Depth)
+                ImGui::Render();
+                ImDrawData* draw_data = ImGui::GetDrawData();
+                const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
+                ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
+                SDL_GPUColorTargetInfo imgui_color_target_info{};
+                imgui_color_target_info.texture = swapchain_texture;
+                imgui_color_target_info.load_op = SDL_GPU_LOADOP_LOAD;
+                imgui_color_target_info.store_op = SDL_GPU_STOREOP_STORE;
+                SDL_GPURenderPass* imgui_render_pass = SDL_BeginGPURenderPass(command_buffer, &imgui_color_target_info, 1, NULL); // NULL for depth_stencil_target_info
+                if (!is_minimized)
+                {
+                    ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, imgui_render_pass);
+                }
+                SDL_EndGPURenderPass(imgui_render_pass);
 
             // submit the command buffer
             SDL_SubmitGPUCommandBuffer(command_buffer);
