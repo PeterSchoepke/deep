@@ -34,7 +34,6 @@ namespace deep
 namespace deepcore
 {
     #pragma region Data
-
         struct Render_Context
         {
             SDL_Window* window;
@@ -251,9 +250,7 @@ namespace deepcore
             }
 
             camera_update_vectors();
-        }
-
-        
+        } 
     #pragma endregion Camera
 
     #pragma region Renderer
@@ -919,10 +916,10 @@ namespace deepcore
             mesh.transform = glm::rotate(mesh.transform, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
             mesh.transform = glm::rotate(mesh.transform, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
             mesh.transform = glm::rotate(mesh.transform, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-        }
-        
-        #pragma endregion Game
+        } 
+    #pragma endregion Game
 
+    #pragma region Audio
         void load_music(const char *filename)
         {            
             SDL_AudioSpec spec;
@@ -994,7 +991,8 @@ namespace deepcore
                 SDL_PutAudioStreamData(sound_system.music.stream, sound_system.music.wav_data, sound_system.music.wav_data_len);
             }
         }
-}
+    #pragma endregion Audio
+    }
 
 namespace deep
 {
