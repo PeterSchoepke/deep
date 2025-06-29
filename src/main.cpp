@@ -27,11 +27,12 @@ void load_scene()
 {
     deep::set_camera_position(deep::map_position(10,10)+glm::vec3(0.0f, 1.8f, 0.0f));
 
-    deep::add_light(deep::create_entity(), deep::map_position(18,18)+glm::vec3(0.0f, 4.0f, 0.0f));
-    deep::add_light(deep::create_entity(), deep::map_position(18,1)+glm::vec3(0.0f, 4.0f, 0.0f));
-    deep::add_light(deep::create_entity(), deep::map_position(1,18)+glm::vec3(0.0f, 4.0f, 0.0f));
-    deep::add_light(deep::create_entity(), deep::map_position(1,1)+glm::vec3(0.0f, 4.0f, 0.0f));
+    deep::add_light(deep::create_entity(), deep::map_position(18,18)+glm::vec3(0.0f, 1.5f, 0.0f));
+    deep::add_light(deep::create_entity(), deep::map_position(18,1)+glm::vec3(0.0f, 1.5f, 0.0f));
+    deep::add_light(deep::create_entity(), deep::map_position(1,18)+glm::vec3(0.0f, 1.5f, 0.0f));
+    deep::add_light(deep::create_entity(), deep::map_position(1,1)+glm::vec3(0.0f, 1.5f, 0.0f));
     deep::add_mesh(deep::create_entity(), "ressources/models/floor.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::add_mesh(deep::create_entity(), "ressources/models/floor.glb", glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(180.0f, 0.0f, 0.0f));
 
     int enemy_id = deep::create_entity();
     deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(18,18)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
