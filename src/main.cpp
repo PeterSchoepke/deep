@@ -133,6 +133,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::load_music("bg.wav");
 
     deep::add_mesh_to_map(0, "ressources/models/wall.glb");
+    deep::set_map(17, 17, 1);
+    deep::set_map(17, 2, 1);
+    deep::set_map(2, 17, 1);
+    deep::set_map(2, 2, 1);
+    deep::set_map(11, 11, 1);
     load_scene();
 
     return SDL_APP_CONTINUE;

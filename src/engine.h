@@ -970,7 +970,13 @@ namespace deepcore
         {
             return glm::vec3(x*3.0f, 0.0f, y*3.0f);
         }
-
+        void set_map(int x, int y, int tile)
+        {
+            if(x > -1 && y > -1 && x < map.map_size && y < map.map_size && tile > -1 && tile < map.meshes_max_count)
+            {
+                map.map[x][y] = tile;
+            }
+        }
     #pragma endregion Map
 
     #pragma region Game
@@ -1131,8 +1137,9 @@ namespace deep
     int load_sound(const char *filename) { return deepcore::load_sound(filename); }
     void play_sound(int id) { deepcore::play_sound(id); }
 
-    void init_map() { return deepcore:: init_map(); }
-    void add_mesh_to_map(int index, const char *filename) { return deepcore:: add_mesh_to_map(index, filename); }
-    glm::vec3 map_position(int x, int y) { return deepcore:: map_position(x, y); }
+    void init_map() { return deepcore::init_map(); }
+    void add_mesh_to_map(int index, const char *filename) { return deepcore::add_mesh_to_map(index, filename); }
+    glm::vec3 map_position(int x, int y) { return deepcore::map_position(x, y); }
+    void set_map(int x, int y, int tile) { return deepcore::set_map(x, y, tile); }
     #pragma endregion Interface
 }
