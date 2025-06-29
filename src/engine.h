@@ -229,6 +229,7 @@ namespace deepcore
             return glm::lookAt(camera.position, camera.position + camera.front, camera.up);
         }
 
+        bool is_position_blocked(glm::vec3 position, float radius);
         void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time)
         {
             if(forward || back || left || right || up || down)
@@ -241,14 +242,46 @@ namespace deepcore
                     if(left) { movement -= camera.right; }
                     if(right) { movement += camera.right; }
                     movement.y = 0.0f;
-                    movement = glm::normalize(movement);
+                    if (glm::length(movement) > 0.0001f) {
+                        movement = glm::normalize(movement);
+                    }
                 }
 
                 if(up) { movement.y += 1.0f; }
                 if(down) { movement.y -= 1.0f; }
+                if (glm::length(movement) > 0.0001 && !(forward || back || left || right)) {
+                    movement = glm::normalize(movement);
+                }
 
                 float velocity = camera.movement_speed * delta_time;
-                camera.position += movement * velocity;
+                glm::vec3 desired_position_change = movement * velocity;
+
+                float camera_collision_radius = 0.3f;
+
+                glm::vec3 original_position = camera.position;
+                glm::vec3 temp_position = camera.position;
+
+                temp_position.x = original_position.x + desired_position_change.x;
+                if (!is_position_blocked(temp_position, camera_collision_radius))
+                {
+                    camera.position.x = temp_position.x;
+                }
+                else
+                {
+                    temp_position.x = original_position.x;
+                }
+
+                temp_position.z = original_position.z + desired_position_change.z;
+                if (!is_position_blocked(glm::vec3(camera.position.x, temp_position.y, temp_position.z), camera_collision_radius))
+                {
+                    camera.position.z = temp_position.z;
+                }
+                else
+                {
+                    temp_position.z = original_position.z;
+                }
+
+                camera.position.y += desired_position_change.y;
             }
         }
 
@@ -976,6 +1009,49 @@ namespace deepcore
             {
                 map.map[x][y] = tile;
             }
+        }
+        bool is_position_blocked(glm::vec3 position, float radius)
+        {
+            position = position/3.0f; // Grid is 3 Units
+
+            int min_gx = static_cast<int>(floor(position.x - radius));
+            int max_gx = static_cast<int>(ceil(position.x + radius));
+            int min_gz = static_cast<int>(floor(position.z - radius));
+            int max_gz = static_cast<int>(ceil(position.z + radius));
+
+            for (int gx = min_gx; gx <= max_gx; ++gx)
+            {
+                for (int gz = min_gz; gz <= max_gz; ++gz)
+                {
+                    if (gx >= 0 && gx < map.map_size && gz >= 0 && gz < map.map_size)
+                    {
+                        if (map.map[gx][gz] > 0)
+                        {
+                            float block_min_x = (float)gx - 0.5;
+                            float block_max_x = (float)gx + 0.5f;
+                            float block_min_z = (float)gz - 0.5;
+                            float block_max_z = (float)gz + 0.5f;
+
+                            float closest_x = glm::clamp(position.x, block_min_x, block_max_x);
+                            float closest_z = glm::clamp(position.z, block_min_z, block_max_z);
+
+                            float dist_x = position.x - closest_x;
+                            float dist_z = position.z - closest_z;
+                            float distance_squared = (dist_x * dist_x) + (dist_z * dist_z);
+
+                            if (distance_squared < (radius * radius))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return false; // Out of Bounce
+                    }
+                }
+            }
+            return false;
         }
     #pragma endregion Map
 
