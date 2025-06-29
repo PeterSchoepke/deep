@@ -123,14 +123,22 @@ namespace deepcore
             int count = 0;
         };
 
+        struct Map_Mesh
+        {
+            bool has_mesh = false;
+            SDL_GPUBuffer* vertex_buffer;
+            SDL_GPUBuffer* index_buffer;
+            int index_count;
+        };
+
         struct Map
         {
-            deep::Entity meshes[10];
+            Map_Mesh meshes[10];
             int meshes_max_count = 10;
             int meshes_count = 0;
 
-            int map[10][10] = {};
-            int map_size = 10;
+            int map[20][20] = {};
+            int map_size = 20;
         };
     #pragma endregion Data
 
@@ -382,7 +390,7 @@ namespace deepcore
             pipeline_info.depth_stencil_state.enable_depth_write = true;
             pipeline_info.depth_stencil_state.compare_op = SDL_GPUCompareOp::SDL_GPU_COMPAREOP_LESS;
             pipeline_info.target_info.has_depth_stencil_target = true;
-            pipeline_info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+            pipeline_info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
 
             // create the pipeline
             render_context.graphics_pipeline = SDL_CreateGPUGraphicsPipeline(render_context.device, &pipeline_info);
@@ -404,7 +412,7 @@ namespace deepcore
             texture_create_info.layer_count_or_depth = 1;
             texture_create_info.num_levels = 1;
             texture_create_info.sample_count = SDL_GPU_SAMPLECOUNT_1;
-            texture_create_info.format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+            texture_create_info.format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
             texture_create_info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
             render_context.scene_depth_texture = SDL_CreateGPUTexture(render_context.device, &texture_create_info);
         }
@@ -793,6 +801,35 @@ namespace deepcore
                     }
                 }
 
+                for (int x = 0; x < map.map_size; ++x) {
+                    for (int y = 0; y < map.map_size; ++y) {
+                        if (map.map[x][y] != 0) 
+                        {
+                            int mesh_index = 0; // map.map[x][y] - 1;
+
+                            glm::mat4 transform = glm::mat4(1.0f);
+                            transform = glm::translate(transform, glm::vec3(x*3.0f, 0.0f, y*3.0f));
+
+                            vertex_uniform_buffer.model = transform;
+                            SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
+
+                            // bind the vertex buffer
+                            SDL_GPUBufferBinding vertex_buffer_binding{};
+                            vertex_buffer_binding.buffer = map.meshes[mesh_index].vertex_buffer;
+                            vertex_buffer_binding.offset = 0;
+                            SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_buffer_binding, 1);
+
+                            SDL_GPUBufferBinding index_buffer_binding{};
+                            index_buffer_binding.buffer = map.meshes[mesh_index].index_buffer;
+                            index_buffer_binding.offset = 0;
+                            SDL_BindGPUIndexBuffer(render_pass, &index_buffer_binding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+
+                            // issue a draw call
+                            SDL_DrawGPUIndexedPrimitives(render_pass, map.meshes[mesh_index].index_count, 1, 0, 0, 0);
+                        }
+                    }
+                }
+
                 // end the render pass
                 SDL_EndGPURenderPass(render_pass);
 
@@ -821,8 +858,6 @@ namespace deepcore
             ImGui::NewFrame();
         }
     #pragma endregion Renderer
-
-    
 
     #pragma region Audio
         void load_music(const char *filename)
@@ -899,8 +934,42 @@ namespace deepcore
     #pragma endregion Audio
 
     #pragma region Map
-
-
+        void init_map()
+        {
+            for (int x = 0; x < map.map_size; ++x) { // Rows
+                for (int y = 0; y < map.map_size; ++y) { // Columns
+                    if (x == 0 ||                   // Top row
+                        x == map.map_size - 1 ||    // Bottom row
+                        y == 0 ||                   // Leftmost column
+                        y == map.map_size - 1) {    // Rightmost column
+                        map.map[x][y] = 1;          // Set border cells to 1
+                    } else {
+                        map.map[x][y] = 0;          // Set inner cells to 0
+                    }
+                }
+            }
+        }
+        void add_mesh_to_map(int index, const char *filename)
+        {
+            if(index < map.map_size)
+            {
+                if(map.meshes[index].has_mesh)
+                {
+                    SDL_ReleaseGPUBuffer(render_context.device, map.meshes[index].vertex_buffer);
+                    SDL_ReleaseGPUBuffer(render_context.device, map.meshes[index].index_buffer);
+                }
+                deep::Entity helper = {};
+                load_gltf(filename, helper);
+                map.meshes[index].has_mesh = true;
+                map.meshes[index].vertex_buffer = helper.vertex_buffer;
+                map.meshes[index].index_buffer = helper.index_buffer;
+                map.meshes[index].index_count = helper.index_count;
+            }
+        }
+        glm::vec3 map_position(int x, int y)
+        {
+            return glm::vec3(x*3.0f, 0.0f, y*3.0f);
+        }
 
     #pragma endregion Map
 
@@ -916,6 +985,7 @@ namespace deepcore
             setup_imgui();
             load_textures();
             camera_init(glm::vec3(0.0f, 0.0f, 0.0f));
+            init_map();
         }
         void cleanup()
         {
@@ -925,7 +995,14 @@ namespace deepcore
                     SDL_ReleaseGPUBuffer(render_context.device, entities.data[i].vertex_buffer);
                     SDL_ReleaseGPUBuffer(render_context.device, entities.data[i].index_buffer);
                 }
-            }            
+            }       
+            for (int i = 0; i < map.meshes_count; ++i) {
+                if(map.meshes[i].has_mesh)
+                {
+                    SDL_ReleaseGPUBuffer(render_context.device, map.meshes[i].vertex_buffer);
+                    SDL_ReleaseGPUBuffer(render_context.device, map.meshes[i].index_buffer);
+                }
+            }         
 
             SDL_ReleaseGPUTexture(render_context.device, render_context.diffuse_map);
             SDL_ReleaseGPUTexture(render_context.device, render_context.specular_map);
@@ -1053,5 +1130,9 @@ namespace deep
     void load_music(const char *filename) { deepcore::load_music(filename); }
     int load_sound(const char *filename) { return deepcore::load_sound(filename); }
     void play_sound(int id) { deepcore::play_sound(id); }
+
+    void init_map() { return deepcore:: init_map(); }
+    void add_mesh_to_map(int index, const char *filename) { return deepcore:: add_mesh_to_map(index, filename); }
+    glm::vec3 map_position(int x, int y) { return deepcore:: map_position(x, y); }
     #pragma endregion Interface
 }
