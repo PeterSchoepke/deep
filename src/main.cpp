@@ -31,6 +31,8 @@ void load_scene()
     deep::add_light(deep::create_entity(), glm::vec3(-10.0f, 4.0f, -10.0f));
     deep::add_mesh(deep::create_entity(), "ressources/models/floor.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
+    deep::add_mesh(deep::create_entity(), "ressources/models/wall.glb", glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+
     int enemy_id = deep::create_entity();
     deep::add_mesh(enemy_id, "ressources/models/cube.glb", glm::vec3(10.0f, 0.5f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     deep::get_entity(enemy_id)->hurt_component = true;
