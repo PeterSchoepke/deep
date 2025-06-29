@@ -28,6 +28,9 @@ namespace deep
         int index_count;
 
         bool hurt_component = false;
+        float collision_radius = 0.5f;
+        float sight = 14.0f;
+        float speed = 3.0f;
     };
 }
 
@@ -1013,6 +1016,7 @@ namespace deepcore
         bool is_position_blocked(glm::vec3 position, float radius)
         {
             position = position/3.0f; // Grid is 3 Units
+            radius = radius/3.0f;
 
             int min_gx = static_cast<int>(floor(position.x - radius));
             int max_gx = static_cast<int>(ceil(position.x + radius));
@@ -1200,11 +1204,35 @@ namespace deep
     int get_entity_count() { return deepcore::get_entity_count(); }
     Entity* get_entity(int entity_id) { return deepcore::get_entity(entity_id); }
     glm::vec2 get_entity_position_2d(Entity* entity) { glm::vec3 p = glm::vec3(entity->transform[3]); return glm::vec2(p.x, p.z); }
-    void set_entity_position_2d(Entity* entity, glm::vec2 new_entity_position) 
-    { 
-        glm::vec3 p = glm::vec3(entity->transform[3]);
-        glm::vec3 new_entity_position_3d = glm::vec3(new_entity_position.x, p.y, new_entity_position.y);
-        entity->transform[3] = glm::vec4(new_entity_position_3d, 1.0f);
+    void set_entity_position_2d(deep::Entity* entity, glm::vec2 new_entity_position)
+    {
+        glm::vec3 current_pos_3d = glm::vec3(entity->transform[3]);
+        glm::vec3 desired_target_pos_3d = glm::vec3(new_entity_position.x, current_pos_3d.y, new_entity_position.y);
+
+        glm::vec3 desired_position_change = desired_target_pos_3d - current_pos_3d;
+
+        glm::vec3 original_entity_pos = current_pos_3d;
+        glm::vec3 temp_entity_pos = current_pos_3d;
+
+        temp_entity_pos.x = original_entity_pos.x + desired_position_change.x;
+        if (!deepcore::is_position_blocked(temp_entity_pos, entity->collision_radius))
+        {
+            entity->transform[3].x = temp_entity_pos.x;
+        }
+        else
+        {
+            temp_entity_pos.x = original_entity_pos.x;
+        }
+
+        temp_entity_pos.z = original_entity_pos.z + desired_position_change.z;
+        if (!deepcore::is_position_blocked(glm::vec3(entity->transform[3].x, temp_entity_pos.y, temp_entity_pos.z), entity->collision_radius))
+        {
+            entity->transform[3].z = temp_entity_pos.z;
+        }
+        else
+        {
+            temp_entity_pos.z = original_entity_pos.z;
+        }
     }
     void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }
     void add_mesh(int entity_id, const char *filename, glm::vec3 position, glm::vec3 rotation) { deepcore::add_mesh(entity_id, filename, position, rotation); }

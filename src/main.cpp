@@ -2,6 +2,8 @@
 #include <SDL3/SDL_main.h>
 #include "engine.h"
 
+const float PLAYER_ATTACK_DISTANCE = 4.0f;
+
 enum UI_State 
 {
     Running,
@@ -18,7 +20,7 @@ enum Audio
 };
 
 bool is_player_attacking = false;
-int enemies_left = 5;
+int enemies_left = 0;
 UI_State ui_state = UI_State::Running;
 
 void load_scene()
@@ -57,18 +59,18 @@ void update(float delta_time)
             if(entity->is_active && entity->hurt_component)
             {
                 glm::vec2 entity_position = deep::get_entity_position_2d(entity);
-                if(glm::distance(player_position, entity_position) < 14.0f)
+                if(glm::distance(player_position, entity_position) < entity->sight)
                 {
                     glm::vec2 direction = glm::normalize(player_position - entity_position);
-                    glm::vec2 new_entity_position = entity_position + direction * 3.0f * delta_time;
+                    glm::vec2 new_entity_position = entity_position + direction * entity->speed * delta_time;
                     deep::set_entity_position_2d(entity, new_entity_position);
                 }
-                if(glm::distance(player_position, entity_position) < 0.5f)
+                if(glm::distance(player_position, entity_position) < entity->collision_radius)
                 {
                     ui_state = UI_State::Lose;
                     deep::play_sound(Audio::Hurt);
                 }
-                if(is_player_attacking && glm::distance(player_position, entity_position) < 4.0f)
+                if(is_player_attacking && glm::distance(player_position, entity_position) < PLAYER_ATTACK_DISTANCE)
                 {
                     entity->is_active = false;
                     deep::play_sound(Audio::Hit);
