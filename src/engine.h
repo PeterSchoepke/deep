@@ -122,6 +122,16 @@ namespace deepcore
             int max_count = 10;
             int count = 0;
         };
+
+        struct Map
+        {
+            deep::Entity meshes[10];
+            int meshes_max_count = 10;
+            int meshes_count = 0;
+
+            int map[10][10] = {};
+            int map_size = 10;
+        };
     #pragma endregion Data
 
     #pragma region Globals
@@ -129,6 +139,7 @@ namespace deepcore
         Entities entities{};
         Sound_System sound_system{};
         Camera camera{};
+        Map map{};
     #pragma endregion Globals
 
     #pragma region Assets
@@ -811,6 +822,88 @@ namespace deepcore
         }
     #pragma endregion Renderer
 
+    
+
+    #pragma region Audio
+        void load_music(const char *filename)
+        {            
+            SDL_AudioSpec spec;
+            char *wav_path = NULL;
+
+            /* Load the .wav files from wherever the app is being run from. */
+            SDL_asprintf(&wav_path, "ressources/music/%s", filename);  /* allocate a string of the full file path */
+            if (!SDL_LoadWAV(wav_path, &spec, &sound_system.music.wav_data, &sound_system.music.wav_data_len)) {
+                SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
+            }
+
+            /* Create an audio stream. Set the source format to the wav's format (what
+            we'll input), leave the dest format NULL here (it'll change to what the
+            device wants once we bind it). */
+            sound_system.music.stream = SDL_CreateAudioStream(&spec, NULL);
+            if (!sound_system.music.stream) {
+                SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+            } else if (!SDL_BindAudioStream(sound_system.audio_device, sound_system.music.stream)) {  /* once bound, it'll start playing when there is data available! */
+                SDL_Log("Failed to bind '%s' stream to device: %s", filename, SDL_GetError());
+            }
+
+            SDL_free(wav_path);  /* done with this string. */            
+        }
+
+        int load_sound(const char *filename)
+        {
+            if(sound_system.count < sound_system.max_count)
+            {
+                int i = sound_system.count;
+                SDL_AudioSpec spec;
+                char *wav_path = NULL;
+
+                /* Load the .wav files from wherever the app is being run from. */
+                SDL_asprintf(&wav_path, "ressources/sound/%s", filename);  /* allocate a string of the full file path */
+                if (!SDL_LoadWAV(wav_path, &spec, &sound_system.data[i].wav_data, &sound_system.data[i].wav_data_len)) {
+                    SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
+                }
+
+                /* Create an audio stream. Set the source format to the wav's format (what
+                we'll input), leave the dest format NULL here (it'll change to what the
+                device wants once we bind it). */
+                sound_system.data[i].stream = SDL_CreateAudioStream(&spec, NULL);
+                if (!sound_system.data[i].stream) {
+                    SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+                } else if (!SDL_BindAudioStream(sound_system.audio_device, sound_system.data[i].stream)) {  /* once bound, it'll start playing when there is data available! */
+                    SDL_Log("Failed to bind '%s' stream to device: %s", filename, SDL_GetError());
+                }
+
+                SDL_free(wav_path);  /* done with this string. */
+                
+                sound_system.count += 1;
+                return sound_system.count-1;
+            }
+            return -1;            
+        }
+
+        void play_sound(int id)
+        {
+            if (SDL_GetAudioStreamQueued(sound_system.data[id].stream) < (int)sound_system.data[id].wav_data_len) {
+                /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
+                SDL_PutAudioStreamData(sound_system.data[id].stream, sound_system.data[id].wav_data, sound_system.data[id].wav_data_len);
+            }
+        }
+
+        void update_music()
+        {
+            if (SDL_GetAudioStreamQueued(sound_system.music.stream) < (int)sound_system.music.wav_data_len) {
+                /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
+                SDL_PutAudioStreamData(sound_system.music.stream, sound_system.music.wav_data, sound_system.music.wav_data_len);
+            }
+        }
+    #pragma endregion Audio
+
+    #pragma region Map
+
+
+
+    #pragma endregion Map
+
     #pragma region Game
         void init()
         {
@@ -926,80 +1019,6 @@ namespace deepcore
             mesh.transform = glm::rotate(mesh.transform, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
         } 
     #pragma endregion Game
-
-    #pragma region Audio
-        void load_music(const char *filename)
-        {            
-            SDL_AudioSpec spec;
-            char *wav_path = NULL;
-
-            /* Load the .wav files from wherever the app is being run from. */
-            SDL_asprintf(&wav_path, "ressources/music/%s", filename);  /* allocate a string of the full file path */
-            if (!SDL_LoadWAV(wav_path, &spec, &sound_system.music.wav_data, &sound_system.music.wav_data_len)) {
-                SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
-            }
-
-            /* Create an audio stream. Set the source format to the wav's format (what
-            we'll input), leave the dest format NULL here (it'll change to what the
-            device wants once we bind it). */
-            sound_system.music.stream = SDL_CreateAudioStream(&spec, NULL);
-            if (!sound_system.music.stream) {
-                SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
-            } else if (!SDL_BindAudioStream(sound_system.audio_device, sound_system.music.stream)) {  /* once bound, it'll start playing when there is data available! */
-                SDL_Log("Failed to bind '%s' stream to device: %s", filename, SDL_GetError());
-            }
-
-            SDL_free(wav_path);  /* done with this string. */            
-        }
-
-        int load_sound(const char *filename)
-        {
-            if(sound_system.count < sound_system.max_count)
-            {
-                int i = sound_system.count;
-                SDL_AudioSpec spec;
-                char *wav_path = NULL;
-
-                /* Load the .wav files from wherever the app is being run from. */
-                SDL_asprintf(&wav_path, "ressources/sound/%s", filename);  /* allocate a string of the full file path */
-                if (!SDL_LoadWAV(wav_path, &spec, &sound_system.data[i].wav_data, &sound_system.data[i].wav_data_len)) {
-                    SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
-                }
-
-                /* Create an audio stream. Set the source format to the wav's format (what
-                we'll input), leave the dest format NULL here (it'll change to what the
-                device wants once we bind it). */
-                sound_system.data[i].stream = SDL_CreateAudioStream(&spec, NULL);
-                if (!sound_system.data[i].stream) {
-                    SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
-                } else if (!SDL_BindAudioStream(sound_system.audio_device, sound_system.data[i].stream)) {  /* once bound, it'll start playing when there is data available! */
-                    SDL_Log("Failed to bind '%s' stream to device: %s", filename, SDL_GetError());
-                }
-
-                SDL_free(wav_path);  /* done with this string. */
-                
-                sound_system.count += 1;
-                return sound_system.count-1;
-            }
-            return -1;            
-        }
-
-        void play_sound(int id)
-        {
-            if (SDL_GetAudioStreamQueued(sound_system.data[id].stream) < (int)sound_system.data[id].wav_data_len) {
-                /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
-                SDL_PutAudioStreamData(sound_system.data[id].stream, sound_system.data[id].wav_data, sound_system.data[id].wav_data_len);
-            }
-        }
-
-        void update_music()
-        {
-            if (SDL_GetAudioStreamQueued(sound_system.music.stream) < (int)sound_system.music.wav_data_len) {
-                /* feed more data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
-                SDL_PutAudioStreamData(sound_system.music.stream, sound_system.music.wav_data, sound_system.music.wav_data_len);
-            }
-        }
-    #pragma endregion Audio
     }
 
 namespace deep
