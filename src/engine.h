@@ -1013,6 +1013,16 @@ namespace deepcore
                 map.map[x][y] = tile;
             }
         }
+        void set_map(const int data[20][20])
+        {
+            for (int x = 0; x < map.map_size; ++x)
+            {
+                for (int y = 0; y < map.map_size; ++y)
+                {
+                    map.map[x][y] = data[x][y];
+                }
+            }
+        }
         bool is_position_blocked(glm::vec3 position, float radius)
         {
             position = position/3.0f; // Grid is 3 Units
@@ -1245,5 +1255,6 @@ namespace deep
     void add_mesh_to_map(int index, const char *filename) { return deepcore::add_mesh_to_map(index, filename); }
     glm::vec3 map_position(int x, int y) { return deepcore::map_position(x, y); }
     void set_map(int x, int y, int tile) { return deepcore::set_map(x, y, tile); }
+    void set_map(const int data[20][20]) { return deepcore::set_map(data); }
     #pragma endregion Interface
 }
