@@ -841,7 +841,7 @@ namespace deepcore
                     for (int y = 0; y < map.map_size; ++y) {
                         if (map.map[x][y] != 0) 
                         {
-                            int mesh_index = 0; // map.map[x][y] - 1;
+                            int mesh_index = map.map[x][y] - 1;
 
                             glm::mat4 transform = glm::mat4(1.0f);
                             transform = glm::translate(transform, glm::vec3(x*3.0f, 0.0f, y*3.0f));
@@ -1025,6 +1025,8 @@ namespace deepcore
         }
         bool is_position_blocked(glm::vec3 position, float radius)
         {
+            return false;
+
             position = position/3.0f; // Grid is 3 Units
             radius = radius/3.0f;
 
