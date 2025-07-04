@@ -420,6 +420,7 @@ namespace deepcore
 
             // Cull Mode
             pipeline_info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_BACK;
+            pipeline_info.rasterizer_state.front_face = SDL_GPU_FRONTFACE_CLOCKWISE;
 
             // Depth Testing
             pipeline_info.depth_stencil_state.enable_depth_test = true;
@@ -663,7 +664,7 @@ namespace deepcore
                                 std::vector<Uint16> indices;
 
                                 Uint16 current_vertex_offset = vertices.size();
-                                
+
                                 const cgltf_accessor* pos_accessor = NULL;
                                 const cgltf_accessor* normal_accessor = NULL;
                                 const cgltf_accessor* texcoord_accessor = NULL;
@@ -686,17 +687,25 @@ namespace deepcore
                                     for (cgltf_size k = 0; k < pos_accessor->count; ++k) {
                                         Vertex v = {};
 
-                                        cgltf_accessor_read_float(pos_accessor, k, v.position, 3);
+                                        float temp_pos[3];
+                                        cgltf_accessor_read_float(pos_accessor, k, temp_pos, 3);
+                                        v.position[0] = temp_pos[0];
+                                        v.position[1] = temp_pos[1];
+                                        v.position[2] = -temp_pos[2]; // Invert Z
 
                                         if (normal_accessor) {
-                                            cgltf_accessor_read_float(normal_accessor, k, v.normal, 3);
+                                            float temp_normal[3];
+                                            cgltf_accessor_read_float(normal_accessor, k, temp_normal, 3);
+                                            v.normal[0] = temp_normal[0];
+                                            v.normal[1] = temp_normal[1];
+                                            v.normal[2] = -temp_normal[2]; // Invert Z
                                         } else {
                                             v.normal[0] = 0.0f; v.normal[1] = 0.0f; v.normal[2] = 0.0f;
                                         }
 
                                         if (texcoord_accessor) {
                                             cgltf_accessor_read_float(texcoord_accessor, k, v.texcoord, 2);
-                                        } else {                                        
+                                        } else {
                                             v.texcoord[0] = 0.0f; v.texcoord[1] = 0.0f;
                                         }
                                         vertices.push_back(v);
@@ -837,12 +846,14 @@ namespace deepcore
                     }
                 }
 
-                for (int x = 0; x < map.map_size; ++x) {
-                    for (int y = 0; y < map.map_size; ++y) {
-                        if (map.map[x][y] != 0) 
+                for (int row = map.map_size-1; row >= 0; --row) {
+                    for (int col = 0; col < map.map_size; ++col) {
+                        if (map.map[row][col] != 0) 
                         {
-                            int mesh_index = map.map[x][y] - 1;
+                            int mesh_index = map.map[row][col] - 1;
 
+                            int y = map.map_size - row - 1;
+                            int x = col;
                             glm::mat4 transform = glm::mat4(1.0f);
                             transform = glm::translate(transform, glm::vec3(x*3.0f, 0.0f, y*3.0f));
 
