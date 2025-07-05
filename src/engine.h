@@ -232,7 +232,7 @@ namespace deepcore
             return glm::lookAt(camera.position, camera.position + camera.front, camera.up);
         }
 
-        bool is_position_blocked(glm::vec3 position, float radius);
+        bool is_position_blocked(glm::vec3 current_position, glm::vec3 next_position, float radius);
         void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time)
         {
             if(forward || back || left || right || up || down)
@@ -265,7 +265,7 @@ namespace deepcore
                 glm::vec3 temp_position = camera.position;
 
                 temp_position.x = original_position.x + desired_position_change.x;
-                if (!is_position_blocked(temp_position, camera_collision_radius))
+                if (!is_position_blocked(camera.position, temp_position, camera_collision_radius))
                 {
                     camera.position.x = temp_position.x;
                 }
@@ -275,7 +275,7 @@ namespace deepcore
                 }
 
                 temp_position.z = original_position.z + desired_position_change.z;
-                if (!is_position_blocked(glm::vec3(camera.position.x, temp_position.y, temp_position.z), camera_collision_radius))
+                if (!is_position_blocked(camera.position, glm::vec3(camera.position.x, temp_position.y, temp_position.z), camera_collision_radius))
                 {
                     camera.position.z = temp_position.z;
                 }
@@ -420,7 +420,7 @@ namespace deepcore
 
             // Cull Mode
             pipeline_info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_BACK;
-            pipeline_info.rasterizer_state.front_face = SDL_GPU_FRONTFACE_CLOCKWISE;
+            //pipeline_info.rasterizer_state.front_face = SDL_GPU_FRONTFACE_CLOCKWISE;
 
             // Depth Testing
             pipeline_info.depth_stencil_state.enable_depth_test = true;
@@ -632,7 +632,6 @@ namespace deepcore
 
             render_data.index_count = indices.size();
             render_data.transform = glm::mat4(1.0f);
-            render_data.transform = glm::rotate(render_data.transform, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         }
         void destroy_render_data(deep::Entity& render_data){
             // release buffers
@@ -687,18 +686,10 @@ namespace deepcore
                                     for (cgltf_size k = 0; k < pos_accessor->count; ++k) {
                                         Vertex v = {};
 
-                                        float temp_pos[3];
-                                        cgltf_accessor_read_float(pos_accessor, k, temp_pos, 3);
-                                        v.position[0] = temp_pos[0];
-                                        v.position[1] = temp_pos[1];
-                                        v.position[2] = -temp_pos[2]; // Invert Z
+                                        cgltf_accessor_read_float(pos_accessor, k, v.position, 3);
 
                                         if (normal_accessor) {
-                                            float temp_normal[3];
-                                            cgltf_accessor_read_float(normal_accessor, k, temp_normal, 3);
-                                            v.normal[0] = temp_normal[0];
-                                            v.normal[1] = temp_normal[1];
-                                            v.normal[2] = -temp_normal[2]; // Invert Z
+                                            cgltf_accessor_read_float(normal_accessor, k, v.normal, 3);
                                         } else {
                                             v.normal[0] = 0.0f; v.normal[1] = 0.0f; v.normal[2] = 0.0f;
                                         }
@@ -852,10 +843,9 @@ namespace deepcore
                         {
                             int mesh_index = map.map[row][col] - 1;
 
-                            int y = map.map_size - row - 1;
-                            int x = col;
+                            int row_real = map.map_size - row - 1;
                             glm::mat4 transform = glm::mat4(1.0f);
-                            transform = glm::translate(transform, glm::vec3(x*3.0f, 0.0f, y*3.0f));
+                            transform = glm::translate(transform, glm::vec3(row_real*3.0f, 0.0f, col*3.0f));
 
                             vertex_uniform_buffer.model = transform;
                             SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
@@ -1034,17 +1024,17 @@ namespace deepcore
                 }
             }
         }
-        bool is_position_blocked(glm::vec3 position, float radius)
+        bool is_position_blocked(glm::vec3 current_position, glm::vec3 next_position, float radius)
         {
             return false;
 
-            position = position/3.0f; // Grid is 3 Units
+            next_position = next_position/3.0f; // Grid is 3 Units
             radius = radius/3.0f;
 
-            int min_gx = static_cast<int>(floor(position.x - radius));
-            int max_gx = static_cast<int>(ceil(position.x + radius));
-            int min_gz = static_cast<int>(floor(position.z - radius));
-            int max_gz = static_cast<int>(ceil(position.z + radius));
+            int min_gx = static_cast<int>(floor(next_position.x - radius));
+            int max_gx = static_cast<int>(ceil(next_position.x + radius));
+            int min_gz = static_cast<int>(floor(next_position.z - radius));
+            int max_gz = static_cast<int>(ceil(next_position.z + radius));
 
             for (int gx = min_gx; gx <= max_gx; ++gx)
             {
@@ -1052,23 +1042,25 @@ namespace deepcore
                 {
                     if (gx >= 0 && gx < map.map_size && gz >= 0 && gz < map.map_size)
                     {
-                        if (map.map[gx][gz] > 0)
+                        int x = map.map_size - gx - 1;
+                        if (map.map[x][gz] != 5)
                         {
                             float block_min_x = (float)gx - 0.5;
                             float block_max_x = (float)gx + 0.5f;
                             float block_min_z = (float)gz - 0.5;
                             float block_max_z = (float)gz + 0.5f;
 
-                            float closest_x = glm::clamp(position.x, block_min_x, block_max_x);
-                            float closest_z = glm::clamp(position.z, block_min_z, block_max_z);
+                            float closest_x = glm::clamp(next_position.x, block_min_x, block_max_x);
+                            float closest_z = glm::clamp(next_position.z, block_min_z, block_max_z);
 
-                            float dist_x = position.x - closest_x;
-                            float dist_z = position.z - closest_z;
+                            float dist_x = next_position.x - closest_x;
+                            float dist_z = next_position.z - closest_z;
                             float distance_squared = (dist_x * dist_x) + (dist_z * dist_z);
 
                             if (distance_squared < (radius * radius))
                             {
                                 return true;
+                                SDL_Log("blocked");
                             }
                         }
                     }
@@ -1229,32 +1221,32 @@ namespace deep
     glm::vec2 get_entity_position_2d(Entity* entity) { glm::vec3 p = glm::vec3(entity->transform[3]); return glm::vec2(p.x, p.z); }
     void set_entity_position_2d(deep::Entity* entity, glm::vec2 new_entity_position)
     {
-        glm::vec3 current_pos_3d = glm::vec3(entity->transform[3]);
-        glm::vec3 desired_target_pos_3d = glm::vec3(new_entity_position.x, current_pos_3d.y, new_entity_position.y);
+        glm::vec3 current_position_3d = glm::vec3(entity->transform[3]);
+        glm::vec3 desired_target_position_3d = glm::vec3(new_entity_position.x, current_position_3d.y, new_entity_position.y);
 
-        glm::vec3 desired_position_change = desired_target_pos_3d - current_pos_3d;
+        glm::vec3 desired_position_change = desired_target_position_3d - current_position_3d;
 
-        glm::vec3 original_entity_pos = current_pos_3d;
-        glm::vec3 temp_entity_pos = current_pos_3d;
+        glm::vec3 original_entity_position = current_position_3d;
+        glm::vec3 temp_entity_position = current_position_3d;
 
-        temp_entity_pos.x = original_entity_pos.x + desired_position_change.x;
-        if (!deepcore::is_position_blocked(temp_entity_pos, entity->collision_radius))
+        temp_entity_position.x = original_entity_position.x + desired_position_change.x;
+        if (!deepcore::is_position_blocked(current_position_3d, temp_entity_position, entity->collision_radius))
         {
-            entity->transform[3].x = temp_entity_pos.x;
+            entity->transform[3].x = temp_entity_position.x;
         }
         else
         {
-            temp_entity_pos.x = original_entity_pos.x;
+            temp_entity_position.x = original_entity_position.x;
         }
 
-        temp_entity_pos.z = original_entity_pos.z + desired_position_change.z;
-        if (!deepcore::is_position_blocked(glm::vec3(entity->transform[3].x, temp_entity_pos.y, temp_entity_pos.z), entity->collision_radius))
+        temp_entity_position.z = original_entity_position.z + desired_position_change.z;
+        if (!deepcore::is_position_blocked(current_position_3d, glm::vec3(entity->transform[3].x, temp_entity_position.y, temp_entity_position.z), entity->collision_radius))
         {
-            entity->transform[3].z = temp_entity_pos.z;
+            entity->transform[3].z = temp_entity_position.z;
         }
         else
         {
-            temp_entity_pos.z = original_entity_pos.z;
+            temp_entity_position.z = original_entity_position.z;
         }
     }
     void add_light(int entity_id, glm::vec3 position) { deepcore::add_light(entity_id, position); }

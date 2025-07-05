@@ -25,7 +25,7 @@ UI_State ui_state = UI_State::Running;
 
 void load_scene()
 {
-    deep::set_camera_position(deep::map_position(10,10)+glm::vec3(0.0f, 1.8f, 0.0f));
+    deep::set_camera_position(deep::map_position(1,1)+glm::vec3(0.0f, 1.8f, 0.0f));
 
     deep::add_light(deep::create_entity(), deep::map_position(18,18)+glm::vec3(0.0f, 1.5f, 0.0f));
     deep::add_light(deep::create_entity(), deep::map_position(18,1)+glm::vec3(0.0f, 1.5f, 0.0f));
@@ -35,9 +35,9 @@ void load_scene()
     deep::add_mesh(deep::create_entity(), "ressources/models/center.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
     int enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(18,18)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(18,18)+glm::vec3(0.0f, 0.5f, 1000.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     deep::get_entity(enemy_id)->hurt_component = true;
-    enemy_id = deep::create_entity();
+    /*enemy_id = deep::create_entity();
     deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(18,1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     deep::get_entity(enemy_id)->hurt_component = true;
     enemy_id = deep::create_entity();
@@ -45,7 +45,7 @@ void load_scene()
     deep::get_entity(enemy_id)->hurt_component = true;
     enemy_id = deep::create_entity();
     deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(1,1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;
+    deep::get_entity(enemy_id)->hurt_component = true;*/
 }
 
 void update(float delta_time)
@@ -107,8 +107,9 @@ void update_ui(float delta_time)
             //ImGui::Text("%.1f FPS", 1000.0f / (delta_time * 1000.0f)); 
             ImGui::Text("Enemies Left: %d", enemies_left);
             glm::vec2 player_position = deep::get_camera_position_2d();
-            ImGui::Text("X: %f", player_position.x);
-            ImGui::Text("Y: %f", player_position.y);
+            ImGui::Text("X: %.1f", deepcore::camera.position.x);
+            ImGui::Text("Y: %.1f", deepcore::camera.position.y);
+            ImGui::Text("Z: %.1f", deepcore::camera.position.z);
             ImGui::End();
             break;
         case Win:
