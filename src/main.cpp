@@ -139,18 +139,22 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::load_sound("win.wav");
     deep::load_music("bg.wav");
 
-    deep::add_mesh_to_map(0, "ressources/models/wall_1.glb");
-    deep::add_mesh_to_map(1, "ressources/models/wall_2.glb");
-    deep::add_mesh_to_map(2, "ressources/models/wall_3.glb");
-    deep::add_mesh_to_map(3, "ressources/models/wall_4.glb");
-    deep::add_mesh_to_map(4, "ressources/models/wall_5.glb");
-    deep::add_mesh_to_map(5, "ressources/models/wall_6.glb");
-    deep::add_mesh_to_map(6, "ressources/models/wall_7.glb");
-    deep::add_mesh_to_map(7, "ressources/models/wall_8.glb");
-    deep::add_mesh_to_map(8, "ressources/models/wall_9.glb");
+    deep::add_mesh_to_map(0, "ressources/models/wall_1.glb", 1);
+    deep::add_mesh_to_map(1, "ressources/models/wall_2.glb", 2);
+    deep::add_mesh_to_map(2, "ressources/models/wall_3.glb", 3);
+    deep::add_mesh_to_map(3, "ressources/models/wall_4.glb", 4);
+    deep::add_mesh_to_map(4, "ressources/models/wall_5.glb", 5);
+    deep::add_mesh_to_map(5, "ressources/models/wall_6.glb", 6);
+    deep::add_mesh_to_map(6, "ressources/models/wall_7.glb", 7);
+    deep::add_mesh_to_map(7, "ressources/models/wall_8.glb", 8);
+    deep::add_mesh_to_map(8, "ressources/models/wall_9.glb", 9);
     
     const int map[20][20] = {
-        {1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3},
+        {1,2,2,2,3,1,2,2,2,2,2,2,2,2,2,2,2,2,2,3},
+        {4,5,5,5,6,4,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
+        {4,5,5,5,6,4,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
+        {7,8,5,8,9,4,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
+        {1,2,5,2,2,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
         {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
         {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
         {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
@@ -165,11 +169,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
         {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
         {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {7,8,5,8,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {1,2,5,3,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,6,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {7,8,8,9,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9}
+        {7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9}
     };
     deep::set_map(map);
 

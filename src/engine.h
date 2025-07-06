@@ -132,6 +132,11 @@ namespace deepcore
             SDL_GPUBuffer* vertex_buffer;
             SDL_GPUBuffer* index_buffer;
             int index_count;
+
+            bool is_collision_top = false;
+            bool is_collision_right = false;
+            bool is_collision_bottom = false;
+            bool is_collision_left = false;
         };
 
         struct Map
@@ -843,9 +848,8 @@ namespace deepcore
                         {
                             int mesh_index = map.map[row][col] - 1;
 
-                            int row_real = map.map_size - row - 1;
                             glm::mat4 transform = glm::mat4(1.0f);
-                            transform = glm::translate(transform, glm::vec3(row_real*3.0f, 0.0f, col*3.0f));
+                            transform = glm::translate(transform, glm::vec3(col*3.0f+1.5f, 0.0f, row*3.0f+1.5f));
 
                             vertex_uniform_buffer.model = transform;
                             SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
@@ -986,7 +990,7 @@ namespace deepcore
                 }
             }
         }
-        void add_mesh_to_map(int index, const char *filename)
+        void add_mesh_to_map(int index, const char *filename, int rect)
         {
             if(index < map.map_size)
             {
@@ -999,8 +1003,13 @@ namespace deepcore
                 load_gltf(filename, helper);
                 map.meshes[index].has_mesh = true;
                 map.meshes[index].vertex_buffer = helper.vertex_buffer;
-                map.meshes[index].index_buffer = helper.index_buffer;
+                map.meshes[index].index_buffer = helper.index_buffer;                
                 map.meshes[index].index_count = helper.index_count;
+
+                map.meshes[index].is_collision_top = rect == 1 || rect == 2 || rect == 3;
+                map.meshes[index].is_collision_right= rect == 3 || rect == 6 || rect == 9;
+                map.meshes[index].is_collision_bottom = rect == 7 || rect == 8 || rect == 9;
+                map.meshes[index].is_collision_left = rect == 1 || rect == 4 || rect == 7;
             }
         }
         glm::vec3 map_position(int x, int y)
@@ -1026,7 +1035,7 @@ namespace deepcore
         }
         bool is_position_blocked(glm::vec3 current_position, glm::vec3 next_position, float radius)
         {
-            return false;
+            //return false;
 
             next_position = next_position/3.0f; // Grid is 3 Units
             radius = radius/3.0f;
@@ -1036,17 +1045,42 @@ namespace deepcore
             int min_gz = static_cast<int>(floor(next_position.z - radius));
             int max_gz = static_cast<int>(ceil(next_position.z + radius));
 
+            int current_x = static_cast<int>(floor(current_position.x/3.0f));
+            int current_z = static_cast<int>(floor(current_position.z/3.0f));
+            if (current_x < 0 || current_x >= map.map_size || current_z < 0 || current_z >= map.map_size)
+            {
+                return false;
+            }
+            deepcore::Map_Mesh current_tile = map.meshes[map.map[current_x][current_z]-1];
+
             for (int gx = min_gx; gx <= max_gx; ++gx)
             {
                 for (int gz = min_gz; gz <= max_gz; ++gz)
                 {
                     if (gx >= 0 && gx < map.map_size && gz >= 0 && gz < map.map_size)
                     {
-                        int x = map.map_size - gx - 1;
-                        if (map.map[x][gz] != 5)
+                        bool is_collision_testing = false;
+                        if(!is_collision_testing && current_x+1 == gx && current_z == gz)
                         {
-                            float block_min_x = (float)gx - 0.5;
-                            float block_max_x = (float)gx + 0.5f;
+                            is_collision_testing = current_tile.is_collision_right;
+                        }
+                        if(!is_collision_testing && current_x-1 == gx && current_z == gz)
+                        {
+                            is_collision_testing = current_tile.is_collision_left;
+                        }
+                        if(!is_collision_testing && current_z+1 == gz && current_x == gx)
+                        {
+                            is_collision_testing = current_tile.is_collision_bottom;
+                        }
+                        if(!is_collision_testing && current_z-1 == gz && current_x == gx)
+                        {
+                            is_collision_testing = current_tile.is_collision_top;
+                        }
+
+                        if (is_collision_testing)
+                        {
+                            float block_min_x = (float)(gx) - 0.5;
+                            float block_max_x = (float)(gx) + 0.5f;
                             float block_min_z = (float)gz - 0.5;
                             float block_max_z = (float)gz + 0.5f;
 
@@ -1057,16 +1091,18 @@ namespace deepcore
                             float dist_z = next_position.z - closest_z;
                             float distance_squared = (dist_x * dist_x) + (dist_z * dist_z);
 
+                            SDL_Log("Current [%d,%d]", current_x, current_z);
+                            SDL_Log("Next [%d,%d]", gx, gz);
+
                             if (distance_squared < (radius * radius))
                             {
                                 return true;
-                                SDL_Log("blocked");
                             }
                         }
                     }
                     else
                     {
-                        return false; // Out of Bounce
+                        return true; // Out of Bounce
                     }
                 }
             }
@@ -1257,7 +1293,7 @@ namespace deep
     void play_sound(int id) { deepcore::play_sound(id); }
 
     void init_map() { return deepcore::init_map(); }
-    void add_mesh_to_map(int index, const char *filename) { return deepcore::add_mesh_to_map(index, filename); }
+    void add_mesh_to_map(int index, const char *filename, int rect) { return deepcore::add_mesh_to_map(index, filename, rect); }
     glm::vec3 map_position(int x, int y) { return deepcore::map_position(x, y); }
     void set_map(int x, int y, int tile) { return deepcore::set_map(x, y, tile); }
     void set_map(const int data[20][20]) { return deepcore::set_map(data); }
