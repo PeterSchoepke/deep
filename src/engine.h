@@ -137,6 +137,7 @@ namespace deepcore
             bool is_collision_right = false;
             bool is_collision_bottom = false;
             bool is_collision_left = false;
+            bool has_any_collision = false;
         };
 
         struct Map
@@ -1010,6 +1011,7 @@ namespace deepcore
                 map.meshes[index].is_collision_right= rect == 3 || rect == 6 || rect == 9;
                 map.meshes[index].is_collision_bottom = rect == 7 || rect == 8 || rect == 9;
                 map.meshes[index].is_collision_left = rect == 1 || rect == 4 || rect == 7;
+                map.meshes[index].has_any_collision = rect != 5;
             }
         }
         glm::vec3 map_position(int x, int y)
@@ -1033,6 +1035,15 @@ namespace deepcore
                 }
             }
         }
+
+        Map_Mesh* get_map_mesh(int x , int z)
+        {
+            if (x < 0 || x >= map.map_size || z < 0 || z >= map.map_size)
+            {
+                return nullptr;
+            }
+            return &map.meshes[map.map[z][x]-1];
+        }
         bool is_position_blocked(glm::vec3 current_position, glm::vec3 next_position, float radius)
         {
             //return false;
@@ -1047,11 +1058,11 @@ namespace deepcore
 
             int current_x = static_cast<int>(floor(current_position.x/3.0f));
             int current_z = static_cast<int>(floor(current_position.z/3.0f));
-            if (current_x < 0 || current_x >= map.map_size || current_z < 0 || current_z >= map.map_size)
+            Map_Mesh* current_tile = get_map_mesh(current_x , current_z);
+            if (current_tile == nullptr)
             {
                 return false;
             }
-            deepcore::Map_Mesh current_tile = map.meshes[map.map[current_z][current_x]-1];
 
             for (int gx = min_gx; gx <= max_gx; ++gx)
             {
@@ -1076,20 +1087,38 @@ namespace deepcore
                             bool collision = false;
                             if(current_x+1 == gx && current_z == gz)
                             {
-                                collision = current_tile.is_collision_right;
+                                collision = current_tile->is_collision_right;
                             }
                             if(current_x-1 == gx && current_z == gz)
                             {
-                                collision = current_tile.is_collision_left;
+                                collision = current_tile->is_collision_left;
                             }
                             if(current_z+1 == gz && current_x == gx)
                             {
-                                collision = current_tile.is_collision_bottom;
+                                collision = current_tile->is_collision_bottom;
                             }
                             if(current_z-1 == gz && current_x == gx)
                             {
-                                collision = current_tile.is_collision_top;
+                                collision = current_tile->is_collision_top;
                             }
+
+                            if(!current_tile->has_any_collision)
+                            {
+                                if (
+                                    (current_x + 1 == gx && current_z - 1 == gz) ||
+                                    (current_x - 1 == gx && current_z - 1 == gz) ||
+                                    (current_x + 1 == gx && current_z + 1 == gz) ||
+                                    (current_x - 1 == gx && current_z + 1 == gz)
+                                )
+                                {
+                                    Map_Mesh* corner_tile = get_map_mesh(gx , gz);
+                                    if (corner_tile != nullptr)
+                                    {
+                                        collision = corner_tile->has_any_collision;
+                                    }
+                                }                                
+                            }
+
                             if(collision){
                                 return collision;
                             }
