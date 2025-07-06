@@ -1014,7 +1014,7 @@ namespace deepcore
         }
         glm::vec3 map_position(int x, int y)
         {
-            return glm::vec3(x*3.0f, 0.0f, y*3.0f);
+            return glm::vec3(x*3.0f+1.5f, 0.0f, y*3.0f+1.5f);
         }
         void set_map(int x, int y, int tile)
         {
@@ -1051,7 +1051,7 @@ namespace deepcore
             {
                 return false;
             }
-            deepcore::Map_Mesh current_tile = map.meshes[map.map[current_x][current_z]-1];
+            deepcore::Map_Mesh current_tile = map.meshes[map.map[current_z][current_x]-1];
 
             for (int gx = min_gx; gx <= max_gx; ++gx)
             {
@@ -1059,44 +1059,39 @@ namespace deepcore
                 {
                     if (gx >= 0 && gx < map.map_size && gz >= 0 && gz < map.map_size)
                     {
-                        bool is_collision_testing = false;
-                        if(!is_collision_testing && current_x+1 == gx && current_z == gz)
-                        {
-                            is_collision_testing = current_tile.is_collision_right;
-                        }
-                        if(!is_collision_testing && current_x-1 == gx && current_z == gz)
-                        {
-                            is_collision_testing = current_tile.is_collision_left;
-                        }
-                        if(!is_collision_testing && current_z+1 == gz && current_x == gx)
-                        {
-                            is_collision_testing = current_tile.is_collision_bottom;
-                        }
-                        if(!is_collision_testing && current_z-1 == gz && current_x == gx)
-                        {
-                            is_collision_testing = current_tile.is_collision_top;
-                        }
+                        float block_min_x = (float)gx;
+                        float block_max_x = (float)gx + 1.0f;
+                        float block_min_z = (float)gz;
+                        float block_max_z = (float)gz + 1.0f;
 
-                        if (is_collision_testing)
+                        float closest_x = glm::clamp(next_position.x, block_min_x, block_max_x);
+                        float closest_z = glm::clamp(next_position.z, block_min_z, block_max_z);
+
+                        float dist_x = next_position.x - closest_x;
+                        float dist_z = next_position.z - closest_z;
+                        float distance_squared = (dist_x * dist_x) + (dist_z * dist_z);
+
+                        if (distance_squared < (radius * radius))
                         {
-                            float block_min_x = (float)(gx) - 0.5;
-                            float block_max_x = (float)(gx) + 0.5f;
-                            float block_min_z = (float)gz - 0.5;
-                            float block_max_z = (float)gz + 0.5f;
-
-                            float closest_x = glm::clamp(next_position.x, block_min_x, block_max_x);
-                            float closest_z = glm::clamp(next_position.z, block_min_z, block_max_z);
-
-                            float dist_x = next_position.x - closest_x;
-                            float dist_z = next_position.z - closest_z;
-                            float distance_squared = (dist_x * dist_x) + (dist_z * dist_z);
-
-                            SDL_Log("Current [%d,%d]", current_x, current_z);
-                            SDL_Log("Next [%d,%d]", gx, gz);
-
-                            if (distance_squared < (radius * radius))
+                            bool collision = false;
+                            if(current_x+1 == gx && current_z == gz)
                             {
-                                return true;
+                                collision = current_tile.is_collision_right;
+                            }
+                            if(current_x-1 == gx && current_z == gz)
+                            {
+                                collision = current_tile.is_collision_left;
+                            }
+                            if(current_z+1 == gz && current_x == gx)
+                            {
+                                collision = current_tile.is_collision_bottom;
+                            }
+                            if(current_z-1 == gz && current_x == gx)
+                            {
+                                collision = current_tile.is_collision_top;
+                            }
+                            if(collision){
+                                return collision;
                             }
                         }
                     }

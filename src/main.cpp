@@ -107,9 +107,8 @@ void update_ui(float delta_time)
             //ImGui::Text("%.1f FPS", 1000.0f / (delta_time * 1000.0f)); 
             ImGui::Text("Enemies Left: %d", enemies_left);
             glm::vec2 player_position = deep::get_camera_position_2d();
-            ImGui::Text("X: %.1f", deepcore::camera.position.x);
-            ImGui::Text("Y: %.1f", deepcore::camera.position.y);
-            ImGui::Text("Z: %.1f", deepcore::camera.position.z);
+            ImGui::Text("Position: X%.1f Y%.1f Z%.1f", deepcore::camera.position.x, deepcore::camera.position.y, deepcore::camera.position.z);
+            ImGui::Text("Tile: X%d Z%d", static_cast<int>(floor(deepcore::camera.position.x/3.0f)), static_cast<int>(floor(deepcore::camera.position.z/3.0f)));
             ImGui::End();
             break;
         case Win:
