@@ -1104,19 +1104,38 @@ namespace deepcore
 
                             if(!current_tile->has_any_collision)
                             {
-                                if (
-                                    (current_x + 1 == gx && current_z - 1 == gz) ||
-                                    (current_x - 1 == gx && current_z - 1 == gz) ||
-                                    (current_x + 1 == gx && current_z + 1 == gz) ||
-                                    (current_x - 1 == gx && current_z + 1 == gz)
-                                )
+                                if (current_x + 1 == gx && current_z - 1 == gz)
                                 {
                                     Map_Mesh* corner_tile = get_map_mesh(gx , gz);
                                     if (corner_tile != nullptr)
                                     {
-                                        collision = corner_tile->has_any_collision;
+                                        collision = corner_tile->is_collision_bottom || corner_tile->is_collision_left;
                                     }
-                                }                                
+                                }
+                                else if (current_x - 1 == gx && current_z - 1 == gz)
+                                {
+                                    Map_Mesh* corner_tile = get_map_mesh(gx , gz);
+                                    if (corner_tile != nullptr)
+                                    {
+                                        collision = corner_tile->is_collision_right || corner_tile->is_collision_bottom;
+                                    }
+                                }
+                                else if (current_x + 1 == gx && current_z + 1 == gz)
+                                {
+                                    Map_Mesh* corner_tile = get_map_mesh(gx , gz);
+                                    if (corner_tile != nullptr)
+                                    {
+                                        collision = corner_tile->is_collision_top || corner_tile->is_collision_left;
+                                    }
+                                }
+                                else if (current_x - 1 == gx && current_z + 1 == gz)
+                                {
+                                    Map_Mesh* corner_tile = get_map_mesh(gx , gz);
+                                    if (corner_tile != nullptr)
+                                    {
+                                        collision = corner_tile->is_collision_top || corner_tile->is_collision_right;
+                                    }
+                                }                                   
                             }
 
                             if(collision){
