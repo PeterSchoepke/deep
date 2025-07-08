@@ -4,6 +4,125 @@
 
 const float PLAYER_ATTACK_DISTANCE = 4.0f;
 
+struct Room {
+    static const int SIZE_X = 5;
+    static const int SIZE_Y = 3;
+
+    int data[SIZE_Y][SIZE_X];
+
+    Room()
+    {
+        for (int y = 0; y < SIZE_Y; ++y) 
+        {
+            for (int x = 0; x < SIZE_X; ++x) 
+            {
+                if (y == 0) 
+                {
+                    data[y][x] = 2;
+                } 
+                else if (x == SIZE_X - 1) 
+                {
+                    data[y][x] = 6;
+                } 
+                else if (y == SIZE_Y - 1) 
+                {
+                    data[y][x] = 8;
+                } 
+                else if (x == 0) 
+                {
+                    data[y][x] = 4;
+                } 
+                else 
+                {
+                    data[y][x] = 5;
+                }
+            }
+        }
+
+        data[0][0] = 1;
+        data[0][SIZE_X - 1] = 3;
+        data[SIZE_Y - 1][0] = 7;
+        data[SIZE_Y - 1][SIZE_X - 1] = 9;
+    }    
+};
+struct Map {
+    static const int SIZE_X = 20;
+    static const int SIZE_Y = 20;
+
+    int data[SIZE_Y][SIZE_X];
+
+    Map()
+    {
+        for (int y = 0; y < SIZE_Y; ++y) 
+        {
+            for (int x = 0; x < SIZE_X; ++x)
+            {
+                data[y][x] = 0;
+            }
+        }
+    }
+};
+
+void add_doors(Map& map, Room& room, glm::ivec2 pos, glm::bvec4 doors)
+{
+    if(doors.x) // top
+    {
+        int map_x = pos.x + 2;
+        int map_y = pos.y;
+        if (map_x >= 0 && map_x < Map::SIZE_X &&
+            map_y >= 0 && map_y < Map::SIZE_Y) 
+        {
+            map.data[map_y][map_x] = 5;
+        }
+    }
+    if(doors.y) // right
+    {
+        int map_x = pos.x + Room::SIZE_X - 1;
+        int map_y = pos.y + 1;
+        if (map_x >= 0 && map_x < Map::SIZE_X &&
+            map_y >= 0 && map_y < Map::SIZE_Y) 
+        {
+            map.data[map_y][map_x] = 5;
+        }
+    }
+    if(doors.z) // bottom
+    {
+        int map_x = pos.x + 2;
+        int map_y = pos.y + Room::SIZE_Y - 1;
+        if (map_x >= 0 && map_x < Map::SIZE_X &&
+            map_y >= 0 && map_y < Map::SIZE_Y) 
+        {
+            map.data[map_y][map_x] = 5;
+        }
+    }
+    if(doors.w) // left
+    {
+        int map_x = pos.x;
+        int map_y = pos.y + 1;
+        if (map_x >= 0 && map_x < Map::SIZE_X &&
+            map_y >= 0 && map_y < Map::SIZE_Y) 
+        {
+            map.data[map_y][map_x] = 5;
+        }
+    }
+}
+
+void add_room(Map& map, Room& room, glm::ivec2 pos, glm::bvec4 doors)
+{
+    for (int y = 0; y < Room::SIZE_Y; ++y) {
+        for (int x = 0; x < Room::SIZE_X; ++x) {
+            int map_x = pos.x + x;
+            int map_y = pos.y + y;
+
+            if (map_x >= 0 && map_x < Map::SIZE_X &&
+                map_y >= 0 && map_y < Map::SIZE_Y) {
+                map.data[map_y][map_x] = room.data[y][x];
+            }
+        }
+    }
+    add_doors(map, room, pos, doors);
+}
+
 enum UI_State 
 {
     Running,
@@ -148,29 +267,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::add_mesh_to_map(7, "ressources/models/wall_8.glb", 8);
     deep::add_mesh_to_map(8, "ressources/models/wall_9.glb", 9);
     
-    const int map[20][20] = {
-        {1,2,2,2,3,1,2,2,2,2,2,2,2,2,2,2,2,2,2,3},
-        {4,5,5,5,6,4,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,6,4,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {7,8,5,8,9,4,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {1,2,5,2,2,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6},
-        {7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9}
-    };
-    deep::set_map(map);
+    Room room = {};
+    Map map = {};
+    add_room(map, room, glm::ivec2(0, 0), glm::bvec4(false, true, false, false));
+    add_room(map, room, glm::ivec2(5, 0), glm::bvec4(false, false, true, true));
+    add_room(map, room, glm::ivec2(5, 3), glm::bvec4(true, false, false, false));
+
+    deep::set_map(map.data);
 
     load_scene();
 
