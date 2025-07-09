@@ -1053,7 +1053,7 @@ namespace deepcore
             {
                 for (int gz = min_gz; gz <= max_gz; ++gz)
                 {
-                    if (gx >= 0 && gx < deep::MAP_SIZE_Y && gz >= 0 && gz < deep::MAP_SIZE_X)
+                    if (gx >= 0 && gx < deep::MAP_SIZE_X && gz >= 0 && gz < deep::MAP_SIZE_Y)
                     {
                         float block_min_x = (float)gx;
                         float block_max_x = (float)gx + 1.0f;

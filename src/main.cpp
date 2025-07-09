@@ -138,23 +138,23 @@ void add_rooms(Procedural_Map generative_map, Room& room)
     {
         for (int x = 0; x < Procedural_Map::SIZE_X; ++x) 
         {
-            if(generative_map.data[y][x] == 1)
+            if(generative_map.data[y][x] > 0)
             {
                 // Initialize door flags for the current room
                 glm::bvec4 doors_for_this_room = glm::bvec4(false, false, false, false);
-                if (y > 0 && generative_map.data[y - 1][x] == 1) 
+                if (y > 0 && generative_map.data[y - 1][x] > 0) 
                 {
                     doors_for_this_room.x = true;
                 }
-                if (x < Procedural_Map::SIZE_X - 1 && generative_map.data[y][x + 1] == 1) 
+                if (x < Procedural_Map::SIZE_X - 1 && generative_map.data[y][x + 1] > 0) 
                 {
                     doors_for_this_room.y = true;           
                 }
-                if (y < Procedural_Map::SIZE_Y - 1 && generative_map.data[y + 1][x] == 1) 
+                if (y < Procedural_Map::SIZE_Y - 1 && generative_map.data[y + 1][x] > 0) 
                 {
                     doors_for_this_room.z = true;
                 }
-                if (x > 0 && generative_map.data[y][x - 1] == 1) 
+                if (x > 0 && generative_map.data[y][x - 1] > 0) 
                 {
                     doors_for_this_room.w = true;
                 }
@@ -171,6 +171,56 @@ void procgen_place_entrance(Procedural_Map& map, glm::ivec2& start_position)
     start_position.y = randi_range(0, Procedural_Map::SIZE_Y-1);
     map.data[start_position.y][start_position.x] = 1;
 }
+
+bool procgen_generate_path(Procedural_Map& map, glm::ivec2 from, int length, const int marker, std::vector<glm::ivec2>& branch_candidates) {
+        if (length == 0) {
+            return true;
+        }
+
+        glm::ivec2 current = from;
+        glm::ivec2 direction;
+
+        // Representing directions: UP, RIGHT, DOWN, LEFT
+        std::vector<glm::ivec2> directions = {
+            glm::ivec2(0, 1),  // UP
+            glm::ivec2(1, 0),  // RIGHT
+            glm::ivec2(0, -1), // DOWN
+            glm::ivec2(-1, 0)  // LEFT
+        };
+
+        // Shuffle directions to randomize path generation
+        std::shuffle(directions.begin(), directions.end(), rng);
+
+        for (int i = 0; i < 4; ++i) {
+            direction = directions[i];
+            glm::ivec2 next_pos = current + direction;
+
+            if (next_pos.x >= 0 && next_pos.x < Procedural_Map::SIZE_X &&
+                next_pos.y >= 0 && next_pos.y < Procedural_Map::SIZE_Y &&
+                map.data[next_pos.y][next_pos.x] == 0) { // Check if unoccupied
+                
+                current = next_pos;
+                map.data[current.y][current.x] = marker;
+
+                if (length > 1) {
+                    branch_candidates.push_back(current);
+                }
+
+                if (procgen_generate_path(map, current, length - 1, marker+1, branch_candidates)) {
+                    return true;
+                } else {
+                    // Backtrack: Remove from candidates and clear dungeon cell
+                    auto it = std::find(branch_candidates.begin(), branch_candidates.end(), current);
+                    if (it != branch_candidates.end()) {
+                        branch_candidates.erase(it);
+                    }
+                    map.data[current.y][current.x] = 0; // Set back to unoccupied
+                    current = from; // Revert current to 'from' for the next iteration of the loop
+                }
+            }
+        }
+        return false;
+    }
 
 glm::vec3 position_inside_room(glm::ivec2& room_position, int x, int y)
 {
@@ -203,30 +253,42 @@ void load_scene()
     
     glm::ivec2 start_position;
     procgen_place_entrance(map, start_position);
+    std::vector<glm::ivec2> branch_candidates;    
+    procgen_generate_path(map, start_position, 13, 2, branch_candidates);
+    glm::ivec2 goal_position = start_position;
+    if (!branch_candidates.empty())
+    {
+        goal_position = branch_candidates.back();
+    }
 
     add_rooms(map, room);
 
     deep::set_camera_position(position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
 
-    deep::add_light(deep::create_entity(), deep::map_position(18,18)+glm::vec3(0.0f, 1.5f, 0.0f));
-    deep::add_light(deep::create_entity(), deep::map_position(18,1)+glm::vec3(0.0f, 1.5f, 0.0f));
-    deep::add_light(deep::create_entity(), deep::map_position(1,18)+glm::vec3(0.0f, 1.5f, 0.0f));
-    deep::add_light(deep::create_entity(), deep::map_position(1,1)+glm::vec3(0.0f, 1.5f, 0.0f));
+    deep::add_mesh(deep::create_entity(), "ressources/models/center.glb", position_inside_room(goal_position, 2, 1), glm::vec3(0.0f, 0.0f, 0.0f));
 
-    deep::add_mesh(deep::create_entity(), "ressources/models/center.glb", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    if (!branch_candidates.empty())
+    {
+        int parts = branch_candidates.size() / 5;
 
-    int enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(18,18)+glm::vec3(0.0f, 0.5f, 1000.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;
-    /*enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(18,1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;
-    enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(1,18)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;
-    enemy_id = deep::create_entity();
-    deep::add_mesh(enemy_id, "ressources/models/cube.glb", deep::map_position(1,1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    deep::get_entity(enemy_id)->hurt_component = true;*/
+        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*1-1], 1, 1)+glm::vec3(0.0f, 1.5f, 0.0f));
+        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*2-1], 1, 1)+glm::vec3(0.0f, 1.5f, 0.0f));
+        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*3-1], 1, 1)+glm::vec3(0.0f, 1.5f, 0.0f));
+        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*4-1], 1, 1)+glm::vec3(0.0f, 1.5f, 0.0f));
+
+        int enemy_id = deep::create_entity();
+        deep::add_mesh(enemy_id, "ressources/models/cube.glb", position_inside_room(branch_candidates[parts*1-1], 1, 1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        deep::get_entity(enemy_id)->hurt_component = true;
+        enemy_id = deep::create_entity();
+        deep::add_mesh(enemy_id, "ressources/models/cube.glb", position_inside_room(branch_candidates[parts*2-1], 1, 1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        deep::get_entity(enemy_id)->hurt_component = true;
+        enemy_id = deep::create_entity();
+        deep::add_mesh(enemy_id, "ressources/models/cube.glb", position_inside_room(branch_candidates[parts*3-1], 1, 1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        deep::get_entity(enemy_id)->hurt_component = true;
+        enemy_id = deep::create_entity();
+        deep::add_mesh(enemy_id, "ressources/models/cube.glb", position_inside_room(branch_candidates[parts*4-1], 1, 1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        deep::get_entity(enemy_id)->hurt_component = true;
+    }    
 }
 
 void update(float delta_time)
