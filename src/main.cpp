@@ -45,13 +45,13 @@ struct Room {
         data[SIZE_Y - 1][SIZE_X - 1] = 9;
     }    
 };
-struct Map {
-    static const int SIZE_X = 20;
-    static const int SIZE_Y = 20;
+struct Procedural_Map {
+    static const int SIZE_X = 7;
+    static const int SIZE_Y = 5;
 
     int data[SIZE_Y][SIZE_X];
 
-    Map()
+    Procedural_Map()
     {
         for (int y = 0; y < SIZE_Y; ++y) 
         {
@@ -63,64 +63,99 @@ struct Map {
     }
 };
 
-void add_doors(Map& map, Room& room, glm::ivec2 pos, glm::bvec4 doors)
+void add_doors(glm::ivec2 pos, glm::bvec4 doors)
 {
     if(doors.x) // top
     {
         int map_x = pos.x + 2;
         int map_y = pos.y;
-        if (map_x >= 0 && map_x < Map::SIZE_X &&
-            map_y >= 0 && map_y < Map::SIZE_Y) 
+        if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
+            map_y >= 0 && map_y < deep::MAP_SIZE_Y) 
         {
-            map.data[map_y][map_x] = 5;
+            deep::set_map(map_x, map_y, 5);
         }
     }
     if(doors.y) // right
     {
         int map_x = pos.x + Room::SIZE_X - 1;
         int map_y = pos.y + 1;
-        if (map_x >= 0 && map_x < Map::SIZE_X &&
-            map_y >= 0 && map_y < Map::SIZE_Y) 
+        if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
+            map_y >= 0 && map_y < deep::MAP_SIZE_Y) 
         {
-            map.data[map_y][map_x] = 5;
+            deep::set_map(map_x, map_y, 5);
         }
     }
     if(doors.z) // bottom
     {
         int map_x = pos.x + 2;
         int map_y = pos.y + Room::SIZE_Y - 1;
-        if (map_x >= 0 && map_x < Map::SIZE_X &&
-            map_y >= 0 && map_y < Map::SIZE_Y) 
+        if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
+            map_y >= 0 && map_y < deep::MAP_SIZE_Y) 
         {
-            map.data[map_y][map_x] = 5;
+            deep::set_map(map_x, map_y, 5);
         }
     }
     if(doors.w) // left
     {
         int map_x = pos.x;
         int map_y = pos.y + 1;
-        if (map_x >= 0 && map_x < Map::SIZE_X &&
-            map_y >= 0 && map_y < Map::SIZE_Y) 
+        if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
+            map_y >= 0 && map_y < deep::MAP_SIZE_Y) 
         {
-            map.data[map_y][map_x] = 5;
+            deep::set_map(map_x, map_y, 5);
         }
     }
 }
 
-void add_room(Map& map, Room& room, glm::ivec2 pos, glm::bvec4 doors)
+void add_room(Room& room, glm::ivec2 pos, glm::bvec4 doors)
 {
-    for (int y = 0; y < Room::SIZE_Y; ++y) {
-        for (int x = 0; x < Room::SIZE_X; ++x) {
+    for (int y = 0; y < Room::SIZE_Y; ++y) 
+    {
+        for (int x = 0; x < Room::SIZE_X; ++x) 
+        {
             int map_x = pos.x + x;
             int map_y = pos.y + y;
 
-            if (map_x >= 0 && map_x < Map::SIZE_X &&
-                map_y >= 0 && map_y < Map::SIZE_Y) {
-                map.data[map_y][map_x] = room.data[y][x];
+            if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
+                map_y >= 0 && map_y < deep::MAP_SIZE_Y) {
+                deep::set_map(map_x, map_y, room.data[y][x]);
             }
         }
     }
-    add_doors(map, room, pos, doors);
+    add_doors(pos, doors);
+}
+
+void add_rooms(Procedural_Map generative_map, Room& room)
+{
+    for (int y = 0; y < Procedural_Map::SIZE_Y; ++y) 
+    {
+        for (int x = 0; x < Procedural_Map::SIZE_X; ++x) 
+        {
+            if(generative_map.data[y][x] == 1)
+            {
+                // Initialize door flags for the current room
+                glm::bvec4 doors_for_this_room = glm::bvec4(false, false, false, false);
+                if (y > 0 && generative_map.data[y - 1][x] == 1) 
+                {
+                    doors_for_this_room.x = true;
+                }
+                if (x < Procedural_Map::SIZE_X - 1 && generative_map.data[y][x + 1] == 1) 
+                {
+                    doors_for_this_room.y = true;           
+                }
+                if (y < Procedural_Map::SIZE_Y - 1 && generative_map.data[y + 1][x] == 1) 
+                {
+                    doors_for_this_room.z = true;
+                }
+                if (x > 0 && generative_map.data[y][x - 1] == 1) 
+                {
+                    doors_for_this_room.w = true;
+                }
+
+                add_room(room, glm::ivec2(x*Room::SIZE_X, y*Room::SIZE_Y), doors_for_this_room);
+            }
+        }
+    }
 }
 
 enum UI_State 
@@ -268,12 +303,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::add_mesh_to_map(8, "ressources/models/wall_9.glb", 9);
     
     Room room = {};
-    Map map = {};
-    add_room(map, room, glm::ivec2(0, 0), glm::bvec4(false, true, false, false));
-    add_room(map, room, glm::ivec2(5, 0), glm::bvec4(false, false, true, true));
-    add_room(map, room, glm::ivec2(5, 3), glm::bvec4(true, false, false, false));
-
-    deep::set_map(map.data);
+    Procedural_Map procedural_map = {};
+    procedural_map.data[0][0] = 1;
+    procedural_map.data[0][1] = 1;
+    procedural_map.data[1][1] = 1;
+    add_rooms(procedural_map, room);
 
     load_scene();
 

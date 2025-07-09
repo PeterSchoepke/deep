@@ -13,6 +13,9 @@
 
 namespace deep
 {
+    const int MAP_SIZE_X = 35;
+    const int MAP_SIZE_Y = 15;
+    
     struct Entity
     {
         int id;
@@ -146,8 +149,7 @@ namespace deepcore
             int meshes_max_count = 10;
             int meshes_count = 0;
 
-            int map[20][20] = {};
-            int map_size = 20;
+            int map[deep::MAP_SIZE_Y][deep::MAP_SIZE_X] = {};
         };
     #pragma endregion Data
 
@@ -843,8 +845,8 @@ namespace deepcore
                     }
                 }
 
-                for (int row = map.map_size-1; row >= 0; --row) {
-                    for (int col = 0; col < map.map_size; ++col) {
+                for (int row = 0; row < deep::MAP_SIZE_Y; ++row) {
+                    for (int col = 0; col < deep::MAP_SIZE_X; ++col) {
                         if (map.map[row][col] != 0) 
                         {
                             int mesh_index = map.map[row][col] - 1;
@@ -978,22 +980,15 @@ namespace deepcore
     #pragma region Map
         void init_map()
         {
-            for (int x = 0; x < map.map_size; ++x) { // Rows
-                for (int y = 0; y < map.map_size; ++y) { // Columns
-                    if (x == 0 ||                   // Top row
-                        x == map.map_size - 1 ||    // Bottom row
-                        y == 0 ||                   // Leftmost column
-                        y == map.map_size - 1) {    // Rightmost column
-                        map.map[x][y] = 1;          // Set border cells to 1
-                    } else {
-                        map.map[x][y] = 0;          // Set inner cells to 0
-                    }
+            for (int x = 0; x < deep::MAP_SIZE_X; ++x) { // Rows
+                for (int y = 0; y < deep::MAP_SIZE_Y; ++y) { // Columns
+                    map.map[x][y] = 0;
                 }
             }
         }
         void add_mesh_to_map(int index, const char *filename, int rect)
         {
-            if(index < map.map_size)
+            if(index < map.meshes_max_count)
             {
                 if(map.meshes[index].has_mesh)
                 {
@@ -1020,25 +1015,15 @@ namespace deepcore
         }
         void set_map(int x, int y, int tile)
         {
-            if(x > -1 && y > -1 && x < map.map_size && y < map.map_size && tile > -1 && tile < map.meshes_max_count)
+            if(x > -1 && y > -1 && x < deep::MAP_SIZE_X && y < deep::MAP_SIZE_Y && tile > -1 && tile < map.meshes_max_count)
             {
-                map.map[x][y] = tile;
-            }
-        }
-        void set_map(const int data[20][20])
-        {
-            for (int x = 0; x < map.map_size; ++x)
-            {
-                for (int y = 0; y < map.map_size; ++y)
-                {
-                    map.map[x][y] = data[x][y];
-                }
+                map.map[y][x] = tile;
             }
         }
 
         Map_Mesh* get_map_mesh(int x , int z)
         {
-            if (x < 0 || x >= map.map_size || z < 0 || z >= map.map_size)
+            if (x < 0 || x >= deep::MAP_SIZE_X || z < 0 || z >= deep::MAP_SIZE_Y)
             {
                 return nullptr;
             }
@@ -1068,7 +1053,7 @@ namespace deepcore
             {
                 for (int gz = min_gz; gz <= max_gz; ++gz)
                 {
-                    if (gx >= 0 && gx < map.map_size && gz >= 0 && gz < map.map_size)
+                    if (gx >= 0 && gx < deep::MAP_SIZE_Y && gz >= 0 && gz < deep::MAP_SIZE_X)
                     {
                         float block_min_x = (float)gx;
                         float block_max_x = (float)gx + 1.0f;
@@ -1339,6 +1324,5 @@ namespace deep
     void add_mesh_to_map(int index, const char *filename, int rect) { return deepcore::add_mesh_to_map(index, filename, rect); }
     glm::vec3 map_position(int x, int y) { return deepcore::map_position(x, y); }
     void set_map(int x, int y, int tile) { return deepcore::set_map(x, y, tile); }
-    void set_map(const int data[20][20]) { return deepcore::set_map(data); }
     #pragma endregion Interface
 }
