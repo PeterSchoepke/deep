@@ -1,8 +1,15 @@
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
+#include <random>
 #include "engine.h"
 
 const float PLAYER_ATTACK_DISTANCE = 4.0f;
+
+std::mt19937 rng(std::random_device{}());
+int randi_range(int min, int max) {
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(rng);
+}
 
 struct Room {
     static const int SIZE_X = 5;
@@ -158,6 +165,18 @@ void add_rooms(Procedural_Map generative_map, Room& room)
     }
 }
 
+void procgen_place_entrance(Procedural_Map& map, glm::ivec2& start_position)
+{
+    start_position.x = randi_range(0, Procedural_Map::SIZE_X-1);
+    start_position.y = randi_range(0, Procedural_Map::SIZE_Y-1);
+    map.data[start_position.y][start_position.x] = 1;
+}
+
+glm::vec3 position_inside_room(glm::ivec2& room_position, int x, int y)
+{
+    return glm::vec3((room_position.x*Room::SIZE_X*3)+x*3.0f+1.5f, 0.0f, (room_position.y*Room::SIZE_Y*3)+y*3.0f+1.5f);
+}
+
 enum UI_State 
 {
     Running,
@@ -179,7 +198,15 @@ UI_State ui_state = UI_State::Running;
 
 void load_scene()
 {
-    deep::set_camera_position(deep::map_position(1,1)+glm::vec3(0.0f, 1.8f, 0.0f));
+    Room room = {};
+    Procedural_Map map = {};
+    
+    glm::ivec2 start_position;
+    procgen_place_entrance(map, start_position);
+
+    add_rooms(map, room);
+
+    deep::set_camera_position(position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
 
     deep::add_light(deep::create_entity(), deep::map_position(18,18)+glm::vec3(0.0f, 1.5f, 0.0f));
     deep::add_light(deep::create_entity(), deep::map_position(18,1)+glm::vec3(0.0f, 1.5f, 0.0f));
@@ -301,13 +328,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::add_mesh_to_map(6, "ressources/models/wall_7.glb", 7);
     deep::add_mesh_to_map(7, "ressources/models/wall_8.glb", 8);
     deep::add_mesh_to_map(8, "ressources/models/wall_9.glb", 9);
-    
-    Room room = {};
-    Procedural_Map procedural_map = {};
-    procedural_map.data[0][0] = 1;
-    procedural_map.data[0][1] = 1;
-    procedural_map.data[1][1] = 1;
-    add_rooms(procedural_map, room);
 
     load_scene();
 
