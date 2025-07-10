@@ -167,35 +167,59 @@ void procgen_calculate_doors(Procedural_Map& map)
         {
             if(map.recalculate_doors[y][x])
             {
-                map.recalculate_doors[y][x] = false;
                 int current = map.data[y][x];
                 if(current > 0)
                 {
-                    glm::bvec4 doors_for_this_room = glm::bvec4(false, false, false, false);
+                    glm::bvec4 doors_for_this_room = map.doors[y][x];
                     if (y > 0) 
                     {
                         int top = map.data[y - 1][x];
-                        doors_for_this_room.x = top != 0 && (current-1 == top || current+1 == top);
+                        bool recalculate = map.recalculate_doors[y - 1][x];
+                        if(recalculate && top != 0 && (current-1 == top || current+1 == top))
+                        {
+                            doors_for_this_room.x = true;
+                        }
                     }
                     if (x < Procedural_Map::SIZE_X - 1) 
                     {
                         int right = map.data[y][x + 1];
-                        doors_for_this_room.y = right != 0 && (current-1 == right || current+1 == right);       
+                        bool recalculate = map.recalculate_doors[y][x + 1];
+                        if(recalculate && right != 0 && (current-1 == right || current+1 == right))
+                        {
+                            doors_for_this_room.y = true;
+                        }       
                     }
                     if (y < Procedural_Map::SIZE_Y - 1) 
                     {
                         int bottom = map.data[y + 1][x];
-                        doors_for_this_room.z = bottom != 0 && (current-1 == bottom || current+1 == bottom);
+                        bool recalculate = map.recalculate_doors[y + 1][x];
+                        if(recalculate && bottom != 0 && (current-1 == bottom || current+1 == bottom))
+                        {
+                            doors_for_this_room.z = true;
+                        }
                     }
                     if (x > 0) 
                     {
                         int left = map.data[y][x - 1];
-                        doors_for_this_room.w = left != 0 && (current-1 == left || current+1 == left);
+                        bool recalculate = map.recalculate_doors[y][x - 1];
+                        if(recalculate && left != 0 && (current-1 == left || current+1 == left))
+                        {
+                            doors_for_this_room.w = true;
+                        }
                     }
 
                     map.doors[y][x] = doors_for_this_room;
                 }
             }
+        }
+    }
+
+    for (int y = 0; y < Procedural_Map::SIZE_Y; ++y) 
+    {
+        for (int x = 0; x < Procedural_Map::SIZE_X; ++x) 
+        {
+            
+            map.recalculate_doors[y][x] = false;
         }
     }
 }
@@ -366,7 +390,7 @@ void update(float delta_time)
                 }
                 if(glm::distance(player_position, entity_position) < entity->collision_radius)
                 {
-                    ui_state = UI_State::Lose;
+                    //ui_state = UI_State::Lose;
                     deep::play_sound(Audio::Hurt);
                 }
                 if(is_player_attacking && glm::distance(player_position, entity_position) < PLAYER_ATTACK_DISTANCE)
