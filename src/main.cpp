@@ -226,6 +226,26 @@ bool procgen_generate_path(Procedural_Map& map, glm::ivec2 from, int length, con
         return false;
     }
 
+void procgen_generate_branches(Procedural_Map& map, std::vector<glm::ivec2>& branch_candidates) 
+{
+    int branches_created = 0;
+    glm::ivec2 candidate;
+    while (branches_created < 3 && !branch_candidates.empty()) {
+        int random_index = randi_range(0, branch_candidates.size() - 1);
+        candidate = branch_candidates[random_index];
+
+        if (procgen_generate_path(map, candidate, randi_range(1, 4), map.data[candidate.y][candidate.x]+1, branch_candidates)) {
+            branches_created++;
+        } else {
+            // Remove the candidate if it didn't lead to a successful branch
+            auto it = std::find(branch_candidates.begin(), branch_candidates.end(), candidate);
+            if (it != branch_candidates.end()) {
+                branch_candidates.erase(it);
+            }
+        }
+    }
+}
+
 glm::vec3 position_inside_room(glm::ivec2& room_position, int x, int y)
 {
     return glm::vec3((room_position.x*Room::SIZE_X*3)+x*3.0f+1.5f, 0.0f, (room_position.y*Room::SIZE_Y*3)+y*3.0f+1.5f);
@@ -259,6 +279,7 @@ void load_scene()
     procgen_place_entrance(map, start_position);
     std::vector<glm::ivec2> branch_candidates;    
     procgen_generate_path(map, start_position, 13, 2, branch_candidates);
+    procgen_generate_branches(map, branch_candidates);
     glm::ivec2 goal_position = start_position;
     if (!branch_candidates.empty())
     {
