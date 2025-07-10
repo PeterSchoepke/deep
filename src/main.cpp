@@ -290,7 +290,9 @@ void load_scene()
 
     deep::set_camera_position(position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
 
-    deep::add_mesh(deep::create_entity(), "ressources/models/center.glb", position_inside_room(goal_position, 2, 1), glm::vec3(0.0f, 0.0f, 0.0f));
+    int exit_id = deep::create_entity();
+    deep::add_mesh(exit_id, "ressources/models/center.glb", position_inside_room(goal_position, 2, 1), glm::vec3(0.0f, 0.0f, 0.0f));
+    deep::get_entity(exit_id)->exit_component = true;
 
     if (!branch_candidates.empty())
     {
@@ -347,14 +349,18 @@ void update(float delta_time)
                     living_enemies++;
                 }
             }
+            if(entity->is_active && entity->exit_component)
+            {
+                glm::vec2 entity_position = deep::get_entity_position_2d(entity);
+                if(glm::distance(player_position, entity_position) < entity->collision_radius)
+                {
+                    ui_state = UI_State::Win;
+                    deep::play_sound(Audio::Success);
+                }
+            }
         }
 
         enemies_left = living_enemies;
-        if(living_enemies == 0)
-        {
-            ui_state = UI_State::Win;
-            deep::play_sound(Audio::Success);
-        }
 
         is_player_attacking = false;
     }

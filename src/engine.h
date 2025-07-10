@@ -34,6 +34,8 @@ namespace deep
         float collision_radius = 0.5f;
         float sight = 14.0f;
         float speed = 3.0f;
+
+        bool exit_component = false;
     };
 }
 
