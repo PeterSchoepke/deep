@@ -57,6 +57,8 @@ struct Procedural_Map {
     static const int SIZE_Y = 5;
 
     int data[SIZE_Y][SIZE_X];
+    glm::bvec4 doors[SIZE_Y][SIZE_X];
+    bool recalculate_doors[SIZE_Y][SIZE_X];
 
     Procedural_Map()
     {
@@ -65,6 +67,8 @@ struct Procedural_Map {
             for (int x = 0; x < SIZE_X; ++x)
             {
                 data[y][x] = 0;
+                doors[y][x] = glm::bvec4(false, false, false, false);
+                recalculate_doors[y][x] = false;
             }
         }
     }
@@ -140,30 +144,8 @@ void add_rooms(Procedural_Map generative_map, Room& room)
         {
             int current = generative_map.data[y][x];
             if(current > 0)
-            {
-                glm::bvec4 doors_for_this_room = glm::bvec4(false, false, false, false);
-                if (y > 0) 
-                {
-                    int top = generative_map.data[y - 1][x];
-                    doors_for_this_room.x = top != 0 && (current-1 == top || current+1 == top);
-                }
-                if (x < Procedural_Map::SIZE_X - 1) 
-                {
-                    int right = generative_map.data[y][x + 1];
-                    doors_for_this_room.y = right != 0 && (current-1 == right || current+1 == right);       
-                }
-                if (y < Procedural_Map::SIZE_Y - 1) 
-                {
-                    int bottom = generative_map.data[y + 1][x];
-                    doors_for_this_room.z = bottom != 0 && (current-1 == bottom || current+1 == bottom);
-                }
-                if (x > 0) 
-                {
-                    int left = generative_map.data[y][x - 1];
-                    doors_for_this_room.w = left != 0 && (current-1 == left || current+1 == left);
-                }
-
-                add_room(room, glm::ivec2(x*Room::SIZE_X, y*Room::SIZE_Y), doors_for_this_room);
+            {                
+                add_room(room, glm::ivec2(x*Room::SIZE_X, y*Room::SIZE_Y), generative_map.doors[y][x]);
             }
         }
     }
@@ -174,13 +156,57 @@ void procgen_place_entrance(Procedural_Map& map, glm::ivec2& start_position)
     start_position.x = randi_range(0, Procedural_Map::SIZE_X-1);
     start_position.y = randi_range(0, Procedural_Map::SIZE_Y-1);
     map.data[start_position.y][start_position.x] = 1;
+    map.recalculate_doors[start_position.y][start_position.x] = true;
+}
+
+void procgen_calculate_doors(Procedural_Map& map)
+{
+    for (int y = 0; y < Procedural_Map::SIZE_Y; ++y) 
+    {
+        for (int x = 0; x < Procedural_Map::SIZE_X; ++x) 
+        {
+            if(map.recalculate_doors[y][x])
+            {
+                map.recalculate_doors[y][x] = false;
+                int current = map.data[y][x];
+                if(current > 0)
+                {
+                    glm::bvec4 doors_for_this_room = glm::bvec4(false, false, false, false);
+                    if (y > 0) 
+                    {
+                        int top = map.data[y - 1][x];
+                        doors_for_this_room.x = top != 0 && (current-1 == top || current+1 == top);
+                    }
+                    if (x < Procedural_Map::SIZE_X - 1) 
+                    {
+                        int right = map.data[y][x + 1];
+                        doors_for_this_room.y = right != 0 && (current-1 == right || current+1 == right);       
+                    }
+                    if (y < Procedural_Map::SIZE_Y - 1) 
+                    {
+                        int bottom = map.data[y + 1][x];
+                        doors_for_this_room.z = bottom != 0 && (current-1 == bottom || current+1 == bottom);
+                    }
+                    if (x > 0) 
+                    {
+                        int left = map.data[y][x - 1];
+                        doors_for_this_room.w = left != 0 && (current-1 == left || current+1 == left);
+                    }
+
+                    map.doors[y][x] = doors_for_this_room;
+                }
+            }
+        }
+    }
 }
 
 bool procgen_generate_path(Procedural_Map& map, glm::ivec2 from, int length, const int marker, std::vector<glm::ivec2>& branch_candidates) {
         if (length == 0) {
+            procgen_calculate_doors(map);
             return true;
         }
 
+        map.recalculate_doors[from.y][from.x] = true;
         glm::ivec2 current = from;
         glm::ivec2 direction;
 
@@ -205,6 +231,7 @@ bool procgen_generate_path(Procedural_Map& map, glm::ivec2 from, int length, con
                 
                 current = next_pos;
                 map.data[current.y][current.x] = marker;
+                map.recalculate_doors[current.y][current.x] = true;
 
                 if (length > 1) {
                     branch_candidates.push_back(current);
@@ -219,6 +246,7 @@ bool procgen_generate_path(Procedural_Map& map, glm::ivec2 from, int length, con
                         branch_candidates.erase(it);
                     }
                     map.data[current.y][current.x] = 0; // Set back to unoccupied
+                    map.recalculate_doors[current.y][current.x] = false;
                     current = from; // Revert current to 'from' for the next iteration of the loop
                 }
             }
