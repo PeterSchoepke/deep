@@ -138,25 +138,29 @@ void add_rooms(Procedural_Map generative_map, Room& room)
     {
         for (int x = 0; x < Procedural_Map::SIZE_X; ++x) 
         {
-            if(generative_map.data[y][x] > 0)
+            int current = generative_map.data[y][x];
+            if(current > 0)
             {
-                // Initialize door flags for the current room
                 glm::bvec4 doors_for_this_room = glm::bvec4(false, false, false, false);
-                if (y > 0 && generative_map.data[y - 1][x] > 0) 
+                if (y > 0) 
                 {
-                    doors_for_this_room.x = true;
+                    int top = generative_map.data[y - 1][x];
+                    doors_for_this_room.x = top != 0 && (current-1 == top || current+1 == top);
                 }
-                if (x < Procedural_Map::SIZE_X - 1 && generative_map.data[y][x + 1] > 0) 
+                if (x < Procedural_Map::SIZE_X - 1) 
                 {
-                    doors_for_this_room.y = true;           
+                    int right = generative_map.data[y][x + 1];
+                    doors_for_this_room.y = right != 0 && (current-1 == right || current+1 == right);       
                 }
-                if (y < Procedural_Map::SIZE_Y - 1 && generative_map.data[y + 1][x] > 0) 
+                if (y < Procedural_Map::SIZE_Y - 1) 
                 {
-                    doors_for_this_room.z = true;
+                    int bottom = generative_map.data[y + 1][x];
+                    doors_for_this_room.z = bottom != 0 && (current-1 == bottom || current+1 == bottom);
                 }
-                if (x > 0 && generative_map.data[y][x - 1] > 0) 
+                if (x > 0) 
                 {
-                    doors_for_this_room.w = true;
+                    int left = generative_map.data[y][x - 1];
+                    doors_for_this_room.w = left != 0 && (current-1 == left || current+1 == left);
                 }
 
                 add_room(room, glm::ivec2(x*Room::SIZE_X, y*Room::SIZE_Y), doors_for_this_room);
@@ -409,8 +413,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             KEYBOARD_STATE[SDL_SCANCODE_S],
             KEYBOARD_STATE[SDL_SCANCODE_A],
             KEYBOARD_STATE[SDL_SCANCODE_D],
-            false, //KEYBOARD_STATE[SDL_SCANCODE_SPACE],
-            false, //KEYBOARD_STATE[SDL_SCANCODE_LSHIFT],
+            KEYBOARD_STATE[SDL_SCANCODE_SPACE],
+            KEYBOARD_STATE[SDL_SCANCODE_LSHIFT],
             delta_time
         );
     }    
