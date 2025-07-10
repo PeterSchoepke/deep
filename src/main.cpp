@@ -298,6 +298,24 @@ void procgen_generate_branches(Procedural_Map& map, std::vector<glm::ivec2>& bra
     }
 }
 
+void procgen_find_exit(Procedural_Map& map, glm::ivec2& exit_position)
+{
+    int max_room_number = 0;
+    exit_position = glm::ivec2(0, 0);
+    for (int y = 0; y < Procedural_Map::SIZE_Y; ++y) 
+    {
+        for (int x = 0; x < Procedural_Map::SIZE_X; ++x) 
+        {
+            if(map.data[y][x] > max_room_number)
+            {
+                max_room_number = map.data[y][x];
+                exit_position.x = x;
+                exit_position.y = y;
+            }
+        }
+    }
+}
+
 glm::vec3 position_inside_room(glm::ivec2& room_position, int x, int y)
 {
     return glm::vec3((room_position.x*Room::SIZE_X*3)+x*3.0f+1.5f, 0.0f, (room_position.y*Room::SIZE_Y*3)+y*3.0f+1.5f);
@@ -329,14 +347,12 @@ void load_scene()
     
     glm::ivec2 start_position;
     procgen_place_entrance(map, start_position);
+
     std::vector<glm::ivec2> branch_candidates;    
     procgen_generate_path(map, start_position, 13, 2, branch_candidates);
+    glm::ivec2 goal_position;
+    procgen_find_exit(map, goal_position);
     procgen_generate_branches(map, branch_candidates);
-    glm::ivec2 goal_position = start_position;
-    if (!branch_candidates.empty())
-    {
-        goal_position = branch_candidates.back();
-    }
 
     add_rooms(map, room);
 
