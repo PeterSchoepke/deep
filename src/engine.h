@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <cgltf.h>
+#include <steam/steam_api.h>
 
 namespace deep
 {
@@ -161,6 +162,7 @@ namespace deepcore
         Sound_System sound_system{};
         Camera camera{};
         Map map{};
+        bool steam_init = false;
     #pragma endregion Globals
 
     #pragma region Assets
@@ -1143,6 +1145,14 @@ namespace deepcore
     #pragma region Game
         void init()
         {
+            steam_init = SteamAPI_Init();
+            if (steam_init) {
+                SDL_Log("Steamworks API initialized successfully!");
+                SDL_Log("Logged in as: %s", SteamFriends()->GetPersonaName());
+            } else {
+                SDL_Log("Failed to initialize Steamworks API.");
+            }
+            
             SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
             create_window();
@@ -1187,6 +1197,10 @@ namespace deepcore
             SDL_ReleaseWindowFromGPUDevice(render_context.device, render_context.window);
             SDL_DestroyGPUDevice(render_context.device);
             SDL_DestroyWindow(render_context.window);
+
+            if (steam_init) {
+                SteamAPI_Shutdown();
+            }
         }
 
         double last_frame_time = 0;

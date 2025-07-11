@@ -12,6 +12,7 @@ A First Person Action Dungeon Crawler
 ### Project
 - git clone https://github.com/PeterSchoepke/deep.git
 - git submodule update --remote
+- Extract steamworks sdk in vendor/steamworks
 - cmake -S . -B build
 - Press F5 in VSCode
 ### Compile Shaders (Vulkan)

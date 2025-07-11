@@ -1,3 +1,4 @@
 .vs/
 build/
 *.blend1
+vendor/steamworks
