@@ -5,6 +5,9 @@
 
 const float PLAYER_ATTACK_DISTANCE = 4.0f;
 
+static SDL_Joystick* joystick = nullptr;
+SDL_JoystickID joystick_id = 0;
+
 std::mt19937 rng(std::random_device{}());
 int randi_range(int min, int max) {
     std::uniform_int_distribution<int> dist(min, max);
@@ -499,20 +502,57 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 {
     double delta_time = deep::get_delta_time();
 
-    const bool* KEYBOARD_STATE = SDL_GetKeyboardState(NULL);
-
     if(ui_state == UI_State::Running)
     {
+        const bool* KEYBOARD_STATE = SDL_GetKeyboardState(NULL);
+        bool forward = KEYBOARD_STATE[SDL_SCANCODE_W];
+        bool back = KEYBOARD_STATE[SDL_SCANCODE_S];
+        bool left = KEYBOARD_STATE[SDL_SCANCODE_A];
+        bool right = KEYBOARD_STATE[SDL_SCANCODE_D];
+
+        if (joystick)
+        {
+            Uint8 hat_state = SDL_GetJoystickHat(joystick, 0);
+            forward = forward || hat_state & SDL_HAT_UP;
+            back = back || hat_state & SDL_HAT_DOWN;
+            left = left || hat_state & SDL_HAT_LEFT;
+            right = right || hat_state & SDL_HAT_RIGHT;
+
+            const int JOYSTICK_DEAD_ZONE = 8000;
+            Sint16 x_axis = SDL_GetJoystickAxis(joystick, 0);
+            Sint16 y_axis = SDL_GetJoystickAxis(joystick, 1);
+            forward = forward || y_axis < -JOYSTICK_DEAD_ZONE;
+            back = back || y_axis > JOYSTICK_DEAD_ZONE;
+            left = left || x_axis < -JOYSTICK_DEAD_ZONE;
+            right = right || x_axis > JOYSTICK_DEAD_ZONE;
+        }
+
         deep::camera_process_keyboard(
-            KEYBOARD_STATE[SDL_SCANCODE_W],
-            KEYBOARD_STATE[SDL_SCANCODE_S],
-            KEYBOARD_STATE[SDL_SCANCODE_A],
-            KEYBOARD_STATE[SDL_SCANCODE_D],
+            forward,
+            back,
+            left,
+            right,
             false, //KEYBOARD_STATE[SDL_SCANCODE_SPACE],
             false, //KEYBOARD_STATE[SDL_SCANCODE_LSHIFT],
             delta_time
         );
-    }    
+
+        Sint16 axis_right_x_value = SDL_GetJoystickAxis(joystick, 2);
+        Sint16 axis_right_y_value = SDL_GetJoystickAxis(joystick, 3);
+        const Sint16 JOYSTICK_DEAD_ZONE = 8000;
+        float x_offset = 0.0f;
+        float y_offset = 0.0f;
+        if (axis_right_x_value > JOYSTICK_DEAD_ZONE || axis_right_x_value < -JOYSTICK_DEAD_ZONE)
+        {
+            x_offset = static_cast<float>(axis_right_x_value) / SDL_JOYSTICK_AXIS_MAX;
+        }
+        if (axis_right_y_value > JOYSTICK_DEAD_ZONE || axis_right_y_value < -JOYSTICK_DEAD_ZONE)
+        {
+            y_offset = static_cast<float>(axis_right_y_value) / SDL_JOYSTICK_AXIS_MAX * -1.0f;
+        }
+        const float CAMERA_SENSITIVITY = 1000.0f * delta_time;
+        deep::camera_process_mouse_movement(x_offset * CAMERA_SENSITIVITY, y_offset * CAMERA_SENSITIVITY, true);
+    }
 
     deep::mouse_lock(ui_state == UI_State::Running);
     update(delta_time);
@@ -524,7 +564,10 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
-    ImGui_ImplSDL3_ProcessEvent(event);
+    if(ui_state != UI_State::Running)
+    {
+        ImGui_ImplSDL3_ProcessEvent(event);
+    }
 
     if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
     {
@@ -558,6 +601,22 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         }
     }
 
+    if (event->type == SDL_EVENT_JOYSTICK_BUTTON_DOWN)
+    {
+        if (ui_state == UI_State::Running && joystick && event->jbutton.which == joystick_id)
+        {
+            switch (event->jbutton.button)
+            {
+                case 10:
+                    is_player_attacking = true;
+                    deep::play_sound(Audio::Attack);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
     if (event->type == SDL_EVENT_MOUSE_MOTION)
     {
         if(ui_state == UI_State::Running)
@@ -566,6 +625,30 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
             float y_offset = static_cast<float>(event->motion.yrel*-1);
             deep::camera_process_mouse_movement(x_offset, y_offset, true);
         } 
+    }    
+
+    if (event->type == SDL_EVENT_QUIT) {
+        return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+    } else if (event->type == SDL_EVENT_JOYSTICK_ADDED) {
+        /* this event is sent for each hotplugged stick, but also each already-connected joystick during SDL_Init(). */
+        if (joystick == NULL) {  /* we don't have a stick yet and one was added, open it! */
+            joystick = SDL_OpenJoystick(event->jdevice.which);
+            if (!joystick) 
+            {
+                SDL_Log("Failed to open joystick ID %u: %s", (unsigned int) event->jdevice.which, SDL_GetError());
+            } 
+            else
+            {
+                joystick_id = event->jdevice.which;
+                SDL_Log("Success to open joystick ID %u: %s", (unsigned int) event->jdevice.which, SDL_GetJoystickName(joystick));
+            }
+        }
+    } else if (event->type == SDL_EVENT_JOYSTICK_REMOVED) {
+        if (joystick && (SDL_GetJoystickID(joystick) == event->jdevice.which)) {
+            SDL_CloseJoystick(joystick);  /* our joystick was unplugged. */
+            joystick = NULL;
+            joystick_id = 0;
+        }
     }
 
     return SDL_APP_CONTINUE;

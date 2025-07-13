@@ -482,8 +482,8 @@ namespace deepcore
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
             ImGuiIO& io = ImGui::GetIO(); (void)io;
-            io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-            io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+            //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+            //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
             // Setup Dear ImGui style
             ImGui::StyleColorsDark();
@@ -1153,7 +1153,7 @@ namespace deepcore
                 SDL_Log("Failed to initialize Steamworks API.");
             }
             
-            SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+            SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 
             create_window();
             create_render_pipeline();
