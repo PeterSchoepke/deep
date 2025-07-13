@@ -475,6 +475,7 @@ void update_ui(float delta_time)
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
+    deep::use_both_monitors = false;
     deep::init();
 
     deep::load_sound("attack.wav");

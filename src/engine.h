@@ -14,6 +14,8 @@
 
 namespace deep
 {
+    bool use_both_monitors = false; // I have 2 Full HD Monitors and want both used for splitscreen
+
     const int MAP_SIZE_X = 35;
     const int MAP_SIZE_Y = 15;
     
@@ -163,6 +165,9 @@ namespace deepcore
         Camera camera{};
         Map map{};
         bool steam_init = false;
+        float window_size_w = 0.0f;
+        float window_size_h = 0.0f;
+
     #pragma endregion Globals
 
     #pragma region Assets
@@ -226,7 +231,14 @@ namespace deepcore
             camera.movement_speed = 2.5f;
             camera.mouse_sensitivity = 0.1f;
 
-            camera.projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
+            float size_w = window_size_w;
+            float size_h = window_size_h;
+            if(deep::use_both_monitors)
+            {
+                size_w = size_w / 2;
+            }
+
+            camera.projection = glm::perspective(glm::radians(45.0f), size_w / size_h, 0.1f, 100.0f);
         }
 
         glm::vec2 camera_get_position_2d()
@@ -324,7 +336,20 @@ namespace deepcore
         void create_window()
         {
             // create a window
-            render_context.window = SDL_CreateWindow("Deep", 640, 480, SDL_WINDOW_RESIZABLE);
+            window_size_w = 640.0f;
+            window_size_h = 480.0f;
+            if(deep::use_both_monitors)
+            {
+                window_size_w = 1920*2;
+                window_size_h = 1080;
+                render_context.window = SDL_CreateWindow("Deep", window_size_w, window_size_h, SDL_WINDOW_RESIZABLE);
+                SDL_SetWindowPosition(render_context.window, 0, 0);
+            }
+            else
+            {
+                render_context.window = SDL_CreateWindow("Deep", window_size_w, window_size_h, SDL_WINDOW_RESIZABLE);
+            }
+            
             
             // create the device
             render_context.device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
@@ -827,57 +852,88 @@ namespace deepcore
                 texture_sampler_binding[3].texture = render_context.scene_depth_texture;
                 texture_sampler_binding[3].sampler = render_context.sampler;
                 SDL_BindGPUFragmentSamplers(render_pass, 0, texture_sampler_binding, 3);
-                for (int i = 0; i < entities.count; ++i) {
-                    if(entities.data[i].is_active && entities.data[i].mesh_component)
-                    {
-                        vertex_uniform_buffer.model = entities.data[i].transform;
-                        SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
 
-                        // bind the vertex buffer
-                        SDL_GPUBufferBinding vertex_buffer_binding{};
-                        vertex_buffer_binding.buffer = entities.data[i].vertex_buffer;
-                        vertex_buffer_binding.offset = 0;
-                        SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_buffer_binding, 1);
 
-                        SDL_GPUBufferBinding index_buffer_binding{};
-                        index_buffer_binding.buffer = entities.data[i].index_buffer;
-                        index_buffer_binding.offset = 0;
-                        SDL_BindGPUIndexBuffer(render_pass, &index_buffer_binding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
-
-                        // issue a draw call
-                        SDL_DrawGPUIndexedPrimitives(render_pass, entities.data[i].index_count, 1, 0, 0, 0);
-                    }
+                int viewport_count = 1;
+                float viewport_w = window_size_w;
+                float viewport_h = window_size_h;
+                if(deep::use_both_monitors)
+                {
+                    viewport_count = 2;
+                    viewport_w = viewport_w / 2.0f;
                 }
 
-                for (int row = 0; row < deep::MAP_SIZE_Y; ++row) {
-                    for (int col = 0; col < deep::MAP_SIZE_X; ++col) {
-                        if (map.map[row][col] != 0) 
+                SDL_GPUViewport viewports[2];
+                viewports[0].x = 0.0f;
+                viewports[0].y = 0.0f;
+                viewports[0].w = viewport_w;
+                viewports[0].h = viewport_h;
+                viewports[0].min_depth = 0.0f;
+                viewports[0].max_depth = 1.0f;
+                viewports[1].x = viewport_w;
+                viewports[1].y = 0.0f;
+                viewports[1].w = viewport_w;
+                viewports[1].h = viewport_h;
+                viewports[1].min_depth = 0.0f;
+                viewports[1].max_depth = 1.0f;                
+
+                for(int vp_id = 0; vp_id < viewport_count; ++vp_id)
+                {
+                    SDL_SetGPUViewport(render_pass, &viewports[vp_id]);
+
+                    for (int i = 0; i < entities.count; ++i) {
+                        if(entities.data[i].is_active && entities.data[i].mesh_component)
                         {
-                            int mesh_index = map.map[row][col] - 1;
-
-                            glm::mat4 transform = glm::mat4(1.0f);
-                            transform = glm::translate(transform, glm::vec3(col*3.0f+1.5f, 0.0f, row*3.0f+1.5f));
-
-                            vertex_uniform_buffer.model = transform;
+                            vertex_uniform_buffer.model = entities.data[i].transform;
                             SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
 
                             // bind the vertex buffer
                             SDL_GPUBufferBinding vertex_buffer_binding{};
-                            vertex_buffer_binding.buffer = map.meshes[mesh_index].vertex_buffer;
+                            vertex_buffer_binding.buffer = entities.data[i].vertex_buffer;
                             vertex_buffer_binding.offset = 0;
                             SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_buffer_binding, 1);
 
                             SDL_GPUBufferBinding index_buffer_binding{};
-                            index_buffer_binding.buffer = map.meshes[mesh_index].index_buffer;
+                            index_buffer_binding.buffer = entities.data[i].index_buffer;
                             index_buffer_binding.offset = 0;
                             SDL_BindGPUIndexBuffer(render_pass, &index_buffer_binding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
 
                             // issue a draw call
-                            SDL_DrawGPUIndexedPrimitives(render_pass, map.meshes[mesh_index].index_count, 1, 0, 0, 0);
+                            SDL_DrawGPUIndexedPrimitives(render_pass, entities.data[i].index_count, 1, 0, 0, 0);
                         }
                     }
-                }
 
+                    for (int row = 0; row < deep::MAP_SIZE_Y; ++row) {
+                        for (int col = 0; col < deep::MAP_SIZE_X; ++col) {
+                            if (map.map[row][col] != 0) 
+                            {
+                                int mesh_index = map.map[row][col] - 1;
+
+                                glm::mat4 transform = glm::mat4(1.0f);
+                                transform = glm::translate(transform, glm::vec3(col*3.0f+1.5f, 0.0f, row*3.0f+1.5f));
+
+                                vertex_uniform_buffer.model = transform;
+                                SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_uniform_buffer, sizeof(Vertex_Uniform_Buffer));
+
+                                // bind the vertex buffer
+                                SDL_GPUBufferBinding vertex_buffer_binding{};
+                                vertex_buffer_binding.buffer = map.meshes[mesh_index].vertex_buffer;
+                                vertex_buffer_binding.offset = 0;
+                                SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_buffer_binding, 1);
+
+                                SDL_GPUBufferBinding index_buffer_binding{};
+                                index_buffer_binding.buffer = map.meshes[mesh_index].index_buffer;
+                                index_buffer_binding.offset = 0;
+                                SDL_BindGPUIndexBuffer(render_pass, &index_buffer_binding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+
+                                // issue a draw call
+                                SDL_DrawGPUIndexedPrimitives(render_pass, map.meshes[mesh_index].index_count, 1, 0, 0, 0);
+                            }
+                        }
+                    }
+
+                }
+                
                 // end the render pass
                 SDL_EndGPURenderPass(render_pass);
 
