@@ -162,7 +162,7 @@ namespace deepcore
         Render_Context render_context{};
         Entities entities{};
         Sound_System sound_system{};
-        Camera camera{};
+        Camera cameras[2];
         Map map{};
         bool steam_init = false;
         float window_size_w = 0.0f;
@@ -208,28 +208,28 @@ namespace deepcore
     #pragma endregion Assets
 
     #pragma region Camera
-        void camera_update_vectors()
+        void camera_update_vectors(int id)
         {
             glm::vec3 front;
-            front.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
-            front.y = sin(glm::radians(camera.pitch));
-            front.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
-            camera.front = glm::normalize(front);
+            front.x = cos(glm::radians(cameras[id].yaw)) * cos(glm::radians(cameras[id].pitch));
+            front.y = sin(glm::radians(cameras[id].pitch));
+            front.z = sin(glm::radians(cameras[id].yaw)) * cos(glm::radians(cameras[id].pitch));
+            cameras[id].front = glm::normalize(front);
             
-            camera.right = glm::normalize(glm::cross(camera.front, camera.world_up));
-            camera.up    = glm::normalize(glm::cross(camera.right, camera.front));
+            cameras[id].right = glm::normalize(glm::cross(cameras[id].front, cameras[id].world_up));
+            cameras[id].up    = glm::normalize(glm::cross(cameras[id].right, cameras[id].front));
         }
 
-        void camera_init(glm::vec3 position)
+        void camera_init(int id, glm::vec3 position)
         {
-            camera.position = position;
-            camera.world_up = glm::vec3(0.0f, 1.0f, 0.0f);
-            camera.yaw = -90.0f;
-            camera.pitch = 0.0f;
-            camera_update_vectors();
+            cameras[id].position = position;
+            cameras[id].world_up = glm::vec3(0.0f, 1.0f, 0.0f);
+            cameras[id].yaw = -90.0f;
+            cameras[id].pitch = 0.0f;
+            camera_update_vectors(id);
 
-            camera.movement_speed = 2.5f;
-            camera.mouse_sensitivity = 0.1f;
+            cameras[id].movement_speed = 2.5f;
+            cameras[id].mouse_sensitivity = 0.1f;
 
             float size_w = window_size_w;
             float size_h = window_size_h;
@@ -238,36 +238,36 @@ namespace deepcore
                 size_w = size_w / 2;
             }
 
-            camera.projection = glm::perspective(glm::radians(45.0f), size_w / size_h, 0.1f, 100.0f);
+            cameras[id].projection = glm::perspective(glm::radians(45.0f), size_w / size_h, 0.1f, 100.0f);
         }
 
-        glm::vec2 camera_get_position_2d()
+        glm::vec2 camera_get_position_2d(int id)
         {
-            return glm::vec2(camera.position.x, camera.position.z);
+            return glm::vec2(cameras[id].position.x, cameras[id].position.z);
         }
 
-        void camera_set_position(glm::vec3 position)
+        void camera_set_position(int id, glm::vec3 position)
         {
-            camera.position = position;
+            cameras[id].position = position;
         }
 
-        glm::mat4 camera_get_view_matrix()
+        glm::mat4 camera_get_view_matrix(int id)
         {
-            return glm::lookAt(camera.position, camera.position + camera.front, camera.up);
+            return glm::lookAt(cameras[id].position, cameras[id].position + cameras[id].front, cameras[id].up);
         }
 
         bool is_position_blocked(glm::vec3 current_position, glm::vec3 next_position, float radius);
-        void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time)
+        void camera_process_keyboard(int id, bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time)
         {
             if(forward || back || left || right || up || down)
             {
                 glm::vec3 movement = glm::vec3(0.0f, 0.0f, 0.0f);
                 if(forward || back || left || right)
                 {
-                    if(forward) { movement += camera.front; }
-                    if(back) { movement -= camera.front; }
-                    if(left) { movement -= camera.right; }
-                    if(right) { movement += camera.right; }
+                    if(forward) { movement += cameras[id].front; }
+                    if(back) { movement -= cameras[id].front; }
+                    if(left) { movement -= cameras[id].right; }
+                    if(right) { movement += cameras[id].right; }
                     movement.y = 0.0f;
                     if (glm::length(movement) > 0.0001f) {
                         movement = glm::normalize(movement);
@@ -280,18 +280,18 @@ namespace deepcore
                     movement = glm::normalize(movement);
                 }
 
-                float velocity = camera.movement_speed * delta_time;
+                float velocity = cameras[id].movement_speed * delta_time;
                 glm::vec3 desired_position_change = movement * velocity;
 
                 float camera_collision_radius = 0.3f;
 
-                glm::vec3 original_position = camera.position;
-                glm::vec3 temp_position = camera.position;
+                glm::vec3 original_position = cameras[id].position;
+                glm::vec3 temp_position = cameras[id].position;
 
                 temp_position.x = original_position.x + desired_position_change.x;
-                if (!is_position_blocked(camera.position, temp_position, camera_collision_radius))
+                if (!is_position_blocked(cameras[id].position, temp_position, camera_collision_radius))
                 {
-                    camera.position.x = temp_position.x;
+                    cameras[id].position.x = temp_position.x;
                 }
                 else
                 {
@@ -299,36 +299,36 @@ namespace deepcore
                 }
 
                 temp_position.z = original_position.z + desired_position_change.z;
-                if (!is_position_blocked(camera.position, glm::vec3(camera.position.x, temp_position.y, temp_position.z), camera_collision_radius))
+                if (!is_position_blocked(cameras[id].position, glm::vec3(cameras[id].position.x, temp_position.y, temp_position.z), camera_collision_radius))
                 {
-                    camera.position.z = temp_position.z;
+                    cameras[id].position.z = temp_position.z;
                 }
                 else
                 {
                     temp_position.z = original_position.z;
                 }
 
-                camera.position.y += desired_position_change.y;
+                cameras[id].position.y += desired_position_change.y;
             }
         }
 
-        void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch)
+        void camera_process_mouse_movement(int id, float x_offset, float y_offset, bool constrain_pitch)
         {
-            x_offset *= camera.mouse_sensitivity;
-            y_offset *= camera.mouse_sensitivity;
+            x_offset *= cameras[id].mouse_sensitivity;
+            y_offset *= cameras[id].mouse_sensitivity;
 
-            camera.yaw   += x_offset;
-            camera.pitch += y_offset;
+            cameras[id].yaw   += x_offset;
+            cameras[id].pitch += y_offset;
 
             if (constrain_pitch)
             {
-                if (camera.pitch > 89.0f)
-                    camera.pitch = 89.0f;
-                if (camera.pitch < -89.0f)
-                    camera.pitch = -89.0f;
+                if (cameras[id].pitch > 89.0f)
+                    cameras[id].pitch = 89.0f;
+                if (cameras[id].pitch < -89.0f)
+                    cameras[id].pitch = -89.0f;
             }
 
-            camera_update_vectors();
+            camera_update_vectors(id);
         } 
     #pragma endregion Camera
 
@@ -820,12 +820,7 @@ namespace deepcore
                 // bind the pipeline
                 SDL_BindGPUGraphicsPipeline(render_pass, render_context.graphics_pipeline);
 
-                Vertex_Uniform_Buffer vertex_uniform_buffer{};
-                vertex_uniform_buffer.view = camera_get_view_matrix();
-                vertex_uniform_buffer.projection = camera.projection;
-
                 Fragment_Uniform_Buffer fragment_uniform_buffer{};
-
                 int lights_count = 0;
                 for (int i = 0; i < entities.count; ++i) {
                     if(entities.data[i].light_component)
@@ -838,9 +833,7 @@ namespace deepcore
                         lights_count++;
                     }
                 }
-                fragment_uniform_buffer.number_of_lights = lights_count;
-                fragment_uniform_buffer.camera_position = camera.position;
-                SDL_PushGPUFragmentUniformData(command_buffer, 0, &fragment_uniform_buffer, sizeof(Fragment_Uniform_Buffer));
+                fragment_uniform_buffer.number_of_lights = lights_count;                
 
                 SDL_GPUTextureSamplerBinding texture_sampler_binding[4];
                 texture_sampler_binding[0].texture = render_context.diffuse_map;
@@ -879,6 +872,13 @@ namespace deepcore
 
                 for(int vp_id = 0; vp_id < viewport_count; ++vp_id)
                 {
+                    Vertex_Uniform_Buffer vertex_uniform_buffer{};
+                    vertex_uniform_buffer.view = camera_get_view_matrix(vp_id);
+                    vertex_uniform_buffer.projection = cameras[vp_id].projection;
+
+                    fragment_uniform_buffer.camera_position = cameras[vp_id].position;
+                    SDL_PushGPUFragmentUniformData(command_buffer, 0, &fragment_uniform_buffer, sizeof(Fragment_Uniform_Buffer));
+
                     SDL_SetGPUViewport(render_pass, &viewports[vp_id]);
 
                     for (int i = 0; i < entities.count; ++i) {
@@ -1217,7 +1217,8 @@ namespace deepcore
             init_sound();
             setup_imgui();
             load_textures();
-            camera_init(glm::vec3(0.0f, 0.0f, 0.0f));
+            camera_init(0, glm::vec3(0.0f, 0.0f, 0.0f));
+            camera_init(1, glm::vec3(0.0f, 0.0f, 0.0f));
             init_map();
         }
         void cleanup()
@@ -1271,7 +1272,8 @@ namespace deepcore
         void mouse_lock(bool lock) { SDL_SetWindowRelativeMouseMode(render_context.window, lock); }
 
         void clear_scene() {
-            camera_init(glm::vec3(0.0f, 0.0f, 0.0f));
+            camera_init(0, glm::vec3(0.0f, 0.0f, 0.0f));
+            camera_init(1, glm::vec3(0.0f, 0.0f, 0.0f));
 
             for (int i = 0; i < entities.count; ++i) {
                 if(entities.data[i].mesh_component)
@@ -1345,10 +1347,10 @@ namespace deep
     double get_delta_time() { return deepcore::get_delta_time(); }
     void mouse_lock(bool lock) { deepcore::mouse_lock(lock); }
 
-    glm::vec2 get_camera_position_2d() { return deepcore::camera_get_position_2d(); }
-    void set_camera_position(glm::vec3 position) { deepcore::camera_set_position(position); }
-    void camera_process_keyboard(bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) { deepcore::camera_process_keyboard(forward, back, left, right, up, down, delta_time); }
-    void camera_process_mouse_movement(float x_offset, float y_offset, bool constrain_pitch) { deepcore::camera_process_mouse_movement(x_offset, y_offset, constrain_pitch); }
+    glm::vec2 get_camera_position_2d(int id) { return deepcore::camera_get_position_2d(id); }
+    void set_camera_position(int id, glm::vec3 position) { deepcore::camera_set_position(id, position); }
+    void camera_process_keyboard(int id, bool forward, bool back, bool left, bool right, bool up, bool down, float delta_time) { deepcore::camera_process_keyboard(id, forward, back, left, right, up, down, delta_time); }
+    void camera_process_mouse_movement(int id, float x_offset, float y_offset, bool constrain_pitch) { deepcore::camera_process_mouse_movement(id, x_offset, y_offset, constrain_pitch); }
 
     void clear_scene() { deepcore::clear_scene(); }
     int create_entity() { return deepcore::create_entity(); }

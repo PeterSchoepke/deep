@@ -359,7 +359,8 @@ void load_scene()
 
     add_rooms(map, room);
 
-    deep::set_camera_position(position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
+    deep::set_camera_position(0, position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
+    deep::set_camera_position(1, position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
 
     int exit_id = deep::create_entity();
     deep::add_mesh(exit_id, "ressources/models/center.glb", position_inside_room(goal_position, 2, 1), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -393,7 +394,7 @@ void update(float delta_time)
 {
     if(ui_state == UI_State::Running)
     {
-        glm::vec2 player_position = deep::get_camera_position_2d();
+        glm::vec2 player_position = deep::get_camera_position_2d(0); // TODO
         int living_enemies = 0;
         for(int i =0; i < deep::get_entity_count(); i++)
         {
@@ -451,9 +452,10 @@ void update_ui(float delta_time)
             ImGui::Begin("HUD");
             //ImGui::Text("%.1f FPS", 1000.0f / (delta_time * 1000.0f)); 
             ImGui::Text("Enemies Left: %d", enemies_left);
-            glm::vec2 player_position = deep::get_camera_position_2d();
-            ImGui::Text("Position: X%.1f Y%.1f Z%.1f", deepcore::camera.position.x, deepcore::camera.position.y, deepcore::camera.position.z);
-            ImGui::Text("Tile: X%d Z%d", static_cast<int>(floor(deepcore::camera.position.x/3.0f)), static_cast<int>(floor(deepcore::camera.position.z/3.0f)));
+            ImGui::Text("Player 1 Position: X%.1f Y%.1f Z%.1f", deepcore::cameras[0].position.x, deepcore::cameras[0].position.y, deepcore::cameras[0].position.z);
+            //ImGui::Text("Player 1 Tile: X%d Z%d", static_cast<int>(floor(deepcore::cameras[0].position.x/3.0f)), static_cast<int>(floor(deepcore::cameras[0].position.z/3.0f)));
+            ImGui::Text("Player 2 Position: X%.1f Y%.1f Z%.1f", deepcore::cameras[1].position.x, deepcore::cameras[1].position.y, deepcore::cameras[1].position.z);
+            //ImGui::Text("Player 2 Tile: X%d Z%d", static_cast<int>(floor(deepcore::cameras[1].position.x/3.0f)), static_cast<int>(floor(deepcore::cameras[1].position.z/3.0f)));
             ImGui::End();
             break;
         case Win:
@@ -511,13 +513,24 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         bool left = KEYBOARD_STATE[SDL_SCANCODE_A];
         bool right = KEYBOARD_STATE[SDL_SCANCODE_D];
 
+        deep::camera_process_keyboard(
+            0,
+            forward,
+            back,
+            left,
+            right,
+            false, //KEYBOARD_STATE[SDL_SCANCODE_SPACE],
+            false, //KEYBOARD_STATE[SDL_SCANCODE_LSHIFT],
+            delta_time
+        );
+
         if (joystick)
         {
             Uint8 hat_state = SDL_GetJoystickHat(joystick, 0);
-            forward = forward || hat_state & SDL_HAT_UP;
-            back = back || hat_state & SDL_HAT_DOWN;
-            left = left || hat_state & SDL_HAT_LEFT;
-            right = right || hat_state & SDL_HAT_RIGHT;
+            forward = hat_state & SDL_HAT_UP;
+            back = hat_state & SDL_HAT_DOWN;
+            left = hat_state & SDL_HAT_LEFT;
+            right = hat_state & SDL_HAT_RIGHT;
 
             const int JOYSTICK_DEAD_ZONE = 8000;
             Sint16 x_axis = SDL_GetJoystickAxis(joystick, 0);
@@ -529,6 +542,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         }
 
         deep::camera_process_keyboard(
+            1,
             forward,
             back,
             left,
@@ -552,7 +566,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             y_offset = static_cast<float>(axis_right_y_value) / SDL_JOYSTICK_AXIS_MAX * -1.0f;
         }
         const float CAMERA_SENSITIVITY = 1000.0f * delta_time;
-        deep::camera_process_mouse_movement(x_offset * CAMERA_SENSITIVITY, y_offset * CAMERA_SENSITIVITY, true);
+        deep::camera_process_mouse_movement(1, x_offset * CAMERA_SENSITIVITY, y_offset * CAMERA_SENSITIVITY, true);
     }
 
     deep::mouse_lock(ui_state == UI_State::Running);
@@ -624,7 +638,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         {
             float x_offset = static_cast<float>(event->motion.xrel);
             float y_offset = static_cast<float>(event->motion.yrel*-1);
-            deep::camera_process_mouse_movement(x_offset, y_offset, true);
+            deep::camera_process_mouse_movement(0, x_offset, y_offset, true);
         } 
     }    
 
