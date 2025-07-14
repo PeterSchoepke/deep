@@ -339,7 +339,12 @@ enum Audio
     Success
 };
 
-bool is_player_attacking = false;
+struct Player {
+    bool is_player_attacking = false;
+};
+Player players[2];
+int player_count = 1;
+
 int enemies_left = 0;
 UI_State ui_state = UI_State::Running;
 
@@ -394,47 +399,57 @@ void update(float delta_time)
 {
     if(ui_state == UI_State::Running)
     {
-        glm::vec2 player_position = deep::get_camera_position_2d(0); // TODO
+        for(int player_id =0; player_id < player_count; player_id++)
+        {
+            glm::vec2 player_position = deep::get_camera_position_2d(player_id);
+        
+            for(int i =0; i < deep::get_entity_count(); i++)
+            {
+                deep::Entity* entity = deep::get_entity(i);
+                if(entity->is_active && entity->hurt_component)
+                {
+                    glm::vec2 entity_position = deep::get_entity_position_2d(entity);
+                    if(glm::distance(player_position, entity_position) < entity->sight)
+                    {
+                        glm::vec2 direction = glm::normalize(player_position - entity_position);
+                        glm::vec2 new_entity_position = entity_position + direction * entity->speed * delta_time;
+                        deep::set_entity_position_2d(entity, new_entity_position);
+                    }
+                    if(glm::distance(player_position, entity_position) < entity->collision_radius)
+                    {
+                        //ui_state = UI_State::Lose;
+                        deep::play_sound(Audio::Hurt);
+                    }
+                    if(players[player_id].is_player_attacking && glm::distance(player_position, entity_position) < PLAYER_ATTACK_DISTANCE)
+                    {
+                        entity->is_active = false;
+                        deep::play_sound(Audio::Hit);
+                    }
+                }
+                if(entity->is_active && entity->exit_component)
+                {
+                    glm::vec2 entity_position = deep::get_entity_position_2d(entity);
+                    if(glm::distance(player_position, entity_position) < entity->collision_radius)
+                    {
+                        ui_state = UI_State::Win;
+                        deep::play_sound(Audio::Success);
+                    }
+                }
+            }
+            players[player_id].is_player_attacking = false;
+        }
+
         int living_enemies = 0;
         for(int i =0; i < deep::get_entity_count(); i++)
         {
             deep::Entity* entity = deep::get_entity(i);
             if(entity->is_active && entity->hurt_component)
             {
-                glm::vec2 entity_position = deep::get_entity_position_2d(entity);
-                if(glm::distance(player_position, entity_position) < entity->sight)
-                {
-                    glm::vec2 direction = glm::normalize(player_position - entity_position);
-                    glm::vec2 new_entity_position = entity_position + direction * entity->speed * delta_time;
-                    deep::set_entity_position_2d(entity, new_entity_position);
-                }
-                if(glm::distance(player_position, entity_position) < entity->collision_radius)
-                {
-                    //ui_state = UI_State::Lose;
-                    deep::play_sound(Audio::Hurt);
-                }
-                if(is_player_attacking && glm::distance(player_position, entity_position) < PLAYER_ATTACK_DISTANCE)
-                {
-                    entity->is_active = false;
-                    deep::play_sound(Audio::Hit);
-                } else {
-                    living_enemies++;
-                }
+                living_enemies++;
             }
-            if(entity->is_active && entity->exit_component)
-            {
-                glm::vec2 entity_position = deep::get_entity_position_2d(entity);
-                if(glm::distance(player_position, entity_position) < entity->collision_radius)
-                {
-                    ui_state = UI_State::Win;
-                    deep::play_sound(Audio::Success);
-                }
-            }
+
         }
-
         enemies_left = living_enemies;
-
-        is_player_attacking = false;
     }
 }
 
@@ -477,7 +492,11 @@ void update_ui(float delta_time)
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
-    deep::use_both_monitors = false;
+    deep::use_both_monitors = true;
+    if(deep::use_both_monitors)
+    {
+        player_count = 2;
+    }
     deep::init();
 
     deep::load_sound("attack.wav");
@@ -611,7 +630,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
             case SDL_BUTTON_LEFT:
                 if(ui_state == UI_State::Running)
                 {
-                    is_player_attacking = true;
+                    players[0].is_player_attacking = true;
                     deep::play_sound(Audio::Attack);
                 }
                 break;
@@ -627,7 +646,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
             switch (event->jbutton.button)
             {
                 case 10:
-                    is_player_attacking = true;
+                    players[1].is_player_attacking = true;
                     deep::play_sound(Audio::Attack);
                     break;
                 default:
