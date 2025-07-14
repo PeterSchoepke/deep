@@ -86,7 +86,7 @@ void add_doors(glm::ivec2 pos, glm::bvec4 doors)
         if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
             map_y >= 0 && map_y < deep::MAP_SIZE_Y) 
         {
-            deep::set_map(map_x, map_y, 5);
+            deep::set_map(map_x, map_y, 10);
         }
     }
     if(doors.y) // right
@@ -96,7 +96,7 @@ void add_doors(glm::ivec2 pos, glm::bvec4 doors)
         if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
             map_y >= 0 && map_y < deep::MAP_SIZE_Y) 
         {
-            deep::set_map(map_x, map_y, 5);
+            deep::set_map(map_x, map_y, 12);
         }
     }
     if(doors.z) // bottom
@@ -106,7 +106,7 @@ void add_doors(glm::ivec2 pos, glm::bvec4 doors)
         if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
             map_y >= 0 && map_y < deep::MAP_SIZE_Y) 
         {
-            deep::set_map(map_x, map_y, 5);
+            deep::set_map(map_x, map_y, 13);
         }
     }
     if(doors.w) // left
@@ -116,7 +116,7 @@ void add_doors(glm::ivec2 pos, glm::bvec4 doors)
         if (map_x >= 0 && map_x < deep::MAP_SIZE_X &&
             map_y >= 0 && map_y < deep::MAP_SIZE_Y) 
         {
-            deep::set_map(map_x, map_y, 5);
+            deep::set_map(map_x, map_y, 11);
         }
     }
 }
@@ -495,6 +495,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     deep::add_mesh_to_map(6, "ressources/models/wall_7.glb", 7);
     deep::add_mesh_to_map(7, "ressources/models/wall_8.glb", 8);
     deep::add_mesh_to_map(8, "ressources/models/wall_9.glb", 9);
+    deep::add_mesh_to_map(9, "ressources/models/wall_2_door.glb", 5);
+    deep::add_mesh_to_map(10, "ressources/models/wall_4_door.glb", 5);
+    deep::add_mesh_to_map(11, "ressources/models/wall_6_door.glb", 5);
+    deep::add_mesh_to_map(12, "ressources/models/wall_8_door.glb", 5);
 
     load_scene();
 

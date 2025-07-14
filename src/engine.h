@@ -150,8 +150,8 @@ namespace deepcore
 
         struct Map
         {
-            Map_Mesh meshes[10];
-            int meshes_max_count = 10;
+            Map_Mesh meshes[20];
+            int meshes_max_count = 20;
             int meshes_count = 0;
 
             int map[deep::MAP_SIZE_Y][deep::MAP_SIZE_X] = {};
