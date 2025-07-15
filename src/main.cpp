@@ -410,6 +410,8 @@ void update(float delta_time)
         {
             deep::Entity* entity = deep::get_entity(i);
 
+            int nearest_player = 0;
+            float nearest_player_distance = 9999;
             for(int player_id = 0; player_id < player_count; player_id++)
             {
                 glm::vec2 player_position = deep::get_camera_position_2d(player_id);
@@ -419,6 +421,14 @@ void update(float delta_time)
                     if(entity->hurt_component)
                     {
                         glm::vec2 entity_position = deep::get_entity_position_2d(entity);
+
+                        float player_distance = glm::distance(player_position, entity_position);
+                        if(player_distance < nearest_player_distance)
+                        {
+                            nearest_player = player_id;
+                            nearest_player_distance = player_distance;
+                        }
+
                         if(glm::distance(player_position, entity_position) < entity->sight)
                         {
                             glm::vec2 direction = glm::normalize(player_position - entity_position);
@@ -451,6 +461,14 @@ void update(float delta_time)
                     }
                 }
                 
+            }
+            if(nearest_player_distance < entity->sight)
+            {
+                glm::vec2 player_position = deep::get_camera_position_2d(nearest_player);
+                glm::vec2 entity_position = deep::get_entity_position_2d(entity);
+                glm::vec2 direction = glm::normalize(player_position - entity_position);
+                glm::vec2 new_entity_position = entity_position + direction * entity->speed * delta_time;
+                deep::set_entity_position_2d(entity, new_entity_position);
             }
 
             if(entity->is_active && entity->hurt_component)
