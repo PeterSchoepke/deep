@@ -364,8 +364,14 @@ void load_scene()
 
     add_rooms(map, room);
 
-    deep::set_camera_position(0, position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
-    deep::set_camera_position(1, position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
+    glm::vec3 spawn_position = position_inside_room(start_position, 1, 1);
+    deep::set_camera_position(0, spawn_position+glm::vec3(0.0f, 1.8f, 0.0f));
+    deep::add_mesh(deep::create_entity(), "ressources/models/player.glb", spawn_position, glm::vec3(0.0f, 0.0f, 0.0f));
+    if(player_count > 1)
+    {
+        deep::set_camera_position(1, position_inside_room(start_position, 1, 1)+glm::vec3(0.0f, 1.8f, 0.0f));
+        deep::add_mesh(deep::create_entity(), "ressources/models/player.glb", spawn_position, glm::vec3(0.0f, 0.0f, 0.0f));
+    }
 
     int exit_id = deep::create_entity();
     deep::add_mesh(exit_id, "ressources/models/center.glb", position_inside_room(goal_position, 2, 1), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -455,6 +461,9 @@ void update(float delta_time)
 
         for(int player_id = 0; player_id < player_count; player_id++)
         {
+            glm::vec2 player_position = deep::get_camera_position_2d(player_id);
+            deep::Entity* entity = deep::get_entity(player_id);
+            deep::set_entity_position_2d(entity, player_position);
             players[player_id].is_player_attacking = false;
         }
         

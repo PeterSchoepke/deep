@@ -129,8 +129,8 @@ namespace deepcore
 
         struct Entities
         {
-            deep::Entity data[10];
-            int max_count = 10;
+            deep::Entity data[100];
+            int max_count = 100;
             int count = 0;
         };
 
