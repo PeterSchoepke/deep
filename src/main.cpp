@@ -381,10 +381,10 @@ void load_scene()
     {
         int parts = branch_candidates.size() / 5;
 
-        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*1-1], 1, 1)+glm::vec3(0.0f, 1.5f, 0.0f));
-        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*2-1], 1, 1)+glm::vec3(0.0f, 1.5f, 0.0f));
-        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*3-1], 1, 1)+glm::vec3(0.0f, 1.5f, 0.0f));
-        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*4-1], 1, 1)+glm::vec3(0.0f, 1.5f, 0.0f));
+        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*1-1], 1, 1)+glm::vec3(0.0f, 2.5f, 0.0f));
+        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*2-1], 1, 1)+glm::vec3(0.0f, 2.5f, 0.0f));
+        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*3-1], 1, 1)+glm::vec3(0.0f, 2.5f, 0.0f));
+        deep::add_light(deep::create_entity(), position_inside_room(branch_candidates[parts*4-1], 1, 1)+glm::vec3(0.0f, 2.5f, 0.0f));
 
         int enemy_id = deep::create_entity();
         deep::add_mesh(enemy_id, "ressources/models/cube.glb", position_inside_room(branch_candidates[parts*1-1], 1, 1)+glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -528,7 +528,7 @@ void update_ui(float delta_time)
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
-    deep::use_both_monitors = false;
+    deep::use_both_monitors = true;
     if(deep::use_both_monitors)
     {
         player_count = 2;

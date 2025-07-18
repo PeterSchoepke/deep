@@ -47,8 +47,8 @@ vec3 calc_point_light(Light light, vec3 normal, vec3 fragment_position, vec3 vie
     // diffuse shading
     float diff = max(dot(normal, light_direction), 0.0);
     // specular shading
-    vec3 reflect_direction = reflect(-light_direction, normal);
-    float spec = pow(max(dot(view_direction, reflect_direction), 0.0), texture(shininess_map, v_texcoord).r * 255);
+    vec3 halfway_direction = normalize(light_direction + view_direction); 
+    float spec = pow(max(dot(view_direction, halfway_direction), 0.0), texture(shininess_map, v_texcoord).r * 255);
     // attenuation
     float distance    = length(light.position - fragment_position);
     float attenuation = 1.0 / (light.constant_linear_quadratic.r + light.constant_linear_quadratic.g * distance + 
